@@ -1,0 +1,65 @@
+{
+  "transport": {
+    "allowedVehicles": [
+      2053223216,
+      850991848,
+      904750859
+    ]
+  },
+    "policeStations": [
+    {"x": 439.1604, "y": -982.1671, "z": 30.6783, "name": "Police Station", "blipSprite": 60, "blipColor": 3, "blipscale": 1.0, "blipshortRange": true},
+    {"x": 1854.3165, "y": 3684.5671, "z": 30.2572, "name": "Police Station", "blipSprite": 60, "blipColor": 3, "blipscale": 1.0, "blipshortRange": true},
+    {"x": -454.2066, "y": 6011.9736, "z": 31.4535, "name": "Police Station", "blipSprite": 60, "blipColor": 3, "blipscale": 1.0, "blipshortRange": true},
+    {"x": 2484.7517, "y": -382.4703, "z": 82.6937, "name": "Police Station", "blipSprite": 60, "blipColor": 3, "blipscale": 1.0, "blipshortRange": true}
+  ],
+  "points": {
+    "loading": [
+      {"x": 1074.9363, "y": -1951.7671, "z": 30.7964, "name": "Точка погрузки 2", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": -324.2242, "y": -1400.9143, "z": 31.9927, "name": "Точка погрузки 3", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 842.5846, "y": -1316.4132, "z": 26.4659, "name": "Точка погрузки 4", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 2199.5210, "y": 5562.6460, "z": 54.0828, "name": "Точка погрузки 5", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 697.8857, "y": -1134.7913, "z": 23.7363, "name": "Точка погрузки 6", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 730.2857, "y": -560.7956, "z": 26.3986, "name": "Точка погрузки 7", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 849.9956, "y": -1843.7671, "z": 28.8418, "name": "Точка погрузки 8", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": -411.8110, "y": 6174.8569, "z": 31.7062, "name": "Точка погрузки 9", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 939.9561, "y": -2194.9978, "z": 30.7795, "name": "Точка погрузки 10", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 750.6594, "y": -1337.8286, "z": 26.4659, "name": "Точка погрузки 11", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 750.6594, "y": -883.7143, "z": 25.3033, "name": "Точка погрузки 12", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 2525.6572, "y": 4983.6133, "z": 45.0344, "name": "Точка погрузки 13", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 2014.9978, "y": 4981.0684, "z": 41.5297, "name": "Точка погрузки 14", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 2744.8748, "y": 1448.1626, "z": 24.7135, "name": "Точка погрузки 15", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 2985.8374, "y": 3487.8594, "z": 71.6066, "name": "Точка погрузки 16", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 392.2549, "y": 3589.8594, "z": 33.5092, "name": "Точка погрузки 17", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 272.0439, "y": -2510.1099, "z": 6.6337, "name": "Точка погрузки 18", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0},
+      {"x": 530.9275, "y": -2733.9561, "z": 6.2799, "name": "Точка погрузки 19", "blipSprite": 477, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 39, "markerScale": 1.0, "markerColor": [255, 0, 0, 200], "colshapeRadius": 10.0}
+    ],
+    "unloading": [
+      {"x": 120.5, "y": -925.8, "z": 29.2, "name": "Точка разгрузки 1", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 672.9626, "y": -2994.2241, "z": 6.2631, "name": "Точка разгрузки 2", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 167.4593, "y": -3074.9143, "z": 6.0945, "name": "Точка разгрузки 3", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": -1445.7759, "y": -3246.4878, "z": 14.1655, "name": "Точка разгрузки 4", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": -69.5736, "y": -2231.6572, "z": 7.5941, "name": "Точка разгрузки 5", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": -20.6637, "y": -1305.1648, "z": 29.0103, "name": "Точка разгрузки 6", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 1141.3451, "y": 2091.9561, "z": 56.0205, "name": "Точка разгрузки 7", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 1607.0110, "y": -1714.7076, "z": 88.3385, "name": "Точка разгрузки 8", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 2652.1978, "y": 2791.7144, "z": 34.2336, "name": "Точка разгрузки 9", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 881.9077, "y": -2387.3933, "z": 28.2183, "name": "Точка разгрузки 10", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 33.5868, "y": 6445.0947, "z": 31.2007, "name": "Точка разгрузки 11", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 746.3209, "y": -669.9297, "z": 28.0161, "name": "Точка разгрузки 12", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 1244.4264, "y": -3298.1274, "z": 5.8923, "name": "Точка разгрузки 13", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 846.2374, "y": -1232.9802, "z": 26.4828, "name": "Точка разгрузки 14", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 1088.0703, "y": -2300.7693, "z": 29.9539, "name": "Точка разгрузки 15", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": -763.5824, "y": -2598.6331, "z": 14.0645, "name": "Точка разгрузки 16", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": -164.6901, "y": -2707.4109, "z": 6.2292, "name": "Точка разгрузки 17", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 89.3407, "y": 6332.6108, "z": 31.4535, "name": "Точка разгрузки 18", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 497.3934, "y": -1969.3187, "z": 25.1179, "name": "Точка разгрузки 19", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 1208.8088, "y": -1257.6527, "z": 35.4469, "name": "Точка разгрузки 20", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 2564.2681, "y": 4686.9229, "z": 34.3180, "name": "Точка разгрузки 21", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": -585.7714, "y": -1592.0176, "z": 26.9714, "name": "Точка разгрузки 22", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": -979.8857, "y": -2225.8550, "z": 8.6388, "name": "Точка разгрузки 23", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 1615.2000, "y": -2254.4175, "z": 107.2946, "name": "Точка разгрузки 24", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 1233.9561, "y": -2439.7319, "z": 44.7817, "name": "Точка разгрузки 25", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0},
+      {"x": 438.4220, "y": 3520.0088, "z": 33.9304, "name": "Точка разгрузки 26", "blipSprite": 478, "blipColor": 1, "blipscale": 1.0, "blipshortRange": false, "markerType": 29, "markerScale": 1.0, "markerColor": [0, 255, 0, 200], "colshapeRadius": 15.0}
+    ]
+  }
+}
