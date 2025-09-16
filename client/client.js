@@ -215,10 +215,10 @@ handleEntityEnterColshape(colshape, entity) {
                     if (marker) {
                         // Если игрок в транспорте, проверка на разрешенные vehicle
                         if (player.vehicle) {
-                            const vehicleModel = player.vehicle.model;
+                          //  const vehicleModel = player.vehicle.model;
                             
-                            if (!this.allowedVehicles.includes(vehicleModel)) {
-                                alt.log(`Vehicle ${vehicleModel} is not allowed`);
+                            if (!this.allowedVehicles.includes(player.vehicle.model)) {
+                                alt.log(`Vehicle ${player.vehicle.model} is not allowed`);
                                 alt.log(`Неправильное авто`);
                                 return;
                             }
@@ -235,6 +235,11 @@ handleEntityEnterColshape(colshape, entity) {
                             if (!player.vehicle) {
                                     drawNotification('Вы не находитесь в транспорте');
                                     return;
+                            }
+                            if (!this.allowedVehicles.includes(player.vehicle.model)) {
+                                alt.log(`Vehicle ${player.vehicle.model} is not allowed`);
+                                drawNotification('Неправильное авто');
+                                return;
                             }
                             drawNotification('Погрузка началась...', true);
                             this.vehicleBlocker.blockPlayerVehicle(player);
