@@ -108,12 +108,13 @@ class DeliveryJob {
         this.loadingPoint = null;           //для текущей погрузки
         this.unloadingPoint = null;         //для текущей разгрузки
         this.unloadingBlips = [];           //для текущей разгрузки
-        this.markers = [];                  
+        this.markers = [];                  // Массив для хранения текущих маркеров точки погрузки/разгрузки
         this.colshapes = [];                //колшейпы точек погрузок и разгрузок
-        this.points = [];                   
         this.loadingMarkerType = null;      //запоминает тип маркера точки загрузки из конфига
         this.unloadingMarkerType = null;    //запоминает тип маркера точки разгрузки из конфига
         this.currentMarkerType = null;      //для проверки текущего состояния заказа (либо на точке разгрузки либо на точке погрузки)
+        this.currentUnloadingPos = null;    //позиция текущей точки разгрузки (защита от читеров что бы не смогли разгружаться/загружаться далеко от точки)
+        this.currentLoadingPos = null;      //позиция текущей точки погрузки (защита от читеров что бы не смогли разгружаться/загружаться далеко от точки)
         this.markerColshapeMap = new Map();     // Связь маркеров с колшейпами
         this.vehicleBlocker = new VehicleBlocker(); //для блокировки на разгрузке/погрузке
         this.cargoBase = new DeliveryJob.IllegalCargo();    // что бы обращаться к CargoBase и IllegalCargo
@@ -235,7 +236,7 @@ handleEntityEnterColshape(colshape, entity) {
                         notificationManager.showPersistent("Погрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать погрузку");
                 
                         this.keyCheckHandler = alt.everyTick(() => {    //проверка на нажатие E и соблюдение всех необходимых условий для погрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView)
-                        if (alt.isKeyDown(69) && (notificationManager.isWebViewOpen !== false) && (this.currentMarkerType === this.loadingMarkerType)) {
+                        if (alt.isKeyDown(69) && (notificationManager.isWebViewOpen !== false) && (this.currentMarkerType === this.loadingMarkerType) && (this.currentLoadingPos.distanceTo(player.pos) < 15)) {
                         const marker = this.markerColshapeMap.get(colshape);
                             notificationManager.hidePersistent();   //При нажатии E закрывается WebView
                             if (!player.vehicle) {  // Если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
@@ -288,7 +289,7 @@ handleEntityEnterColshape(colshape, entity) {
                         //WebView нажмите E для разгрузки
                         notificationManager.showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
                         this.keyCheckHandler = alt.everyTick(() => {    //проверка на нажатие E и соблюдение всех необходимых условий для разгрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView)
-                        if (alt.isKeyDown(69) && (notificationManager.isWebViewOpen !== false) && (this.currentMarkerType === this.unloadingMarkerType)) {
+                        if (alt.isKeyDown(69) && (notificationManager.isWebViewOpen !== false) && (this.currentMarkerType === this.unloadingMarkerType) && (this.currentUnloadingPos.distanceTo(player.pos) < 15)) {
                             notificationManager.hidePersistent();        //скрыть WebView               
                             if (!player.vehicle) {  //если игрок вышел из авто после въезда в колшейп
                                 drawNotification('Вы не находитесь в транспорте');
@@ -407,7 +408,6 @@ destroyAllPoints() {
     this.loadingBlips = [];
     this.colshapes = [];
     this.markerColshapeMap.clear();
-    this.points = [];
     
     alt.log(`Уничтожено ${destroyedCount} элементов точек погрузки`);
 }
@@ -415,8 +415,8 @@ destroyAllPoints() {
 selectRandomLoadingPoint() {
     const randomIndex = Math.floor(Math.random() * this.loadingPoints.length);
     this.loadingPoint = this.loadingPoints[randomIndex];
+    this.currentLoadingPos = new alt.Vector3(this.loadingPoint.x, this.loadingPoint.y, this.loadingPoint.z);
     const item = this.createBlipWithMarker(this.loadingPoint);
-    
     this.addMarker(item.marker);
     this.loadingBlips.push(item.blip);
     alt.log(`Выбрана точка погрузки: ${this.loadingPoint.name}`); 
@@ -426,6 +426,8 @@ selectRandomLoadingPoint() {
 selectRandomUnloadingPoint() {
     const randomIndex = Math.floor(Math.random() * this.unloadingPoints.length);
     this.unloadingPoint = this.unloadingPoints[randomIndex];
+    this.currentUnloadingPos = new alt.Vector3(this.unloadingPoint.x, this.unloadingPoint.y, this.unloadingPoint.z);
+    
     // Проверка расстояния до полицейских участков (только для Illegal груза)
     if (this.cargoBase instanceof DeliveryJob.IllegalCargo && this.cargoBase.loadtype === 'Illegal') {
         const isDangerous = this.checkDistanceToPoliceStations(this.unloadingPoint);
@@ -444,12 +446,11 @@ selectRandomUnloadingPoint() {
 }
 // Проверка расстояния от точки разгрузки до полицейских участков (если меньше 350 метров выбирается другая точка)
 checkDistanceToPoliceStations(unloadingPoint) {
-    const unloadingPos = new alt.Vector3(unloadingPoint.x, unloadingPoint.y, unloadingPoint.z);
     const isDangerous = this.cargoBase.policeColshapes.some((colshape, index) => {
    
         if (colshape && colshape.valid) {
             const policePos = colshape.pos;
-            const distance = unloadingPos.distanceTo(policePos);
+            const distance = this.currentUnloadingPos.distanceTo(policePos);
             if (distance < 350) {
                 alt.log(`Участок ${index + 1}: участок находится на расстоянии ${distance.toFixed(2)} единиц`);
                 return true;
