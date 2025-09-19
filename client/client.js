@@ -402,13 +402,14 @@ destroyAllPoints() {
             destroyedCount++;
         }
     });
+    this.currentLoadingPos =null;
+    this.currentUnloadingPos =null;
     // очистка всех массивов
     this.markers = [];
     this.unloadingBlips = [];
     this.loadingBlips = [];
     this.colshapes = [];
     this.markerColshapeMap.clear();
-    
     alt.log(`Уничтожено ${destroyedCount} элементов точек погрузки`);
 }
 
