@@ -320,8 +320,10 @@ handleEntityEnterColshape(colshape, entity) {
             blip.sprite = sprite;
             blip.color = color;
             blip.name = point.name;
-            blip.scale = point.blipscale !== undefined ? point.blipscale : 1.0;
-            blip.shortRange = point.blipshortRange !== undefined ? point.blipshortRange : false;
+            blip.scale = point.blipscale;
+    //      blip.scale = point.blipscale !== undefined ? point.blipscale : 1.0;
+            blip.shortRange = point.blipshortRange;
+    //      blip.shortRange = point.blipshortRange !== undefined ? point.blipshortRange : false;
             return blip;
     }
 
