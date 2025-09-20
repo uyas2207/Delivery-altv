@@ -39,18 +39,13 @@ class NotificationManager {
     }
     
     async init() {
-        try {
             this.webView = new alt.WebView('http://resource/client/html/index.html');
             await new Promise(resolve => {
                 this.webView.on('load', resolve);
                 alt.setTimeout(resolve, 2000);
             });
-            
             this.isInitialized = true;
             console.log('Notification manager initialized');
-        } catch (error) {
-            console.error('Failed to initialize notification manager:', error);
-        }
     }
 
     showPersistent(title, text, id = null) {
@@ -183,13 +178,14 @@ class DeliveryJob {
     }
 //проверки входа в колшейп
 handleEntityEnterColshape(colshape, entity) {
+        const pointBase = new DeliveryJob.PointBase(this);
         //если колшейп загрузки
         if (this.currentMarkerType === this.loadingMarkerType){
-            this.PointLoad(colshape, entity);
+            pointBase.PointLoad(colshape, entity);
         }
         //если колшейп разгрузки
         if (this.currentMarkerType === this.unloadingMarkerType){
-            this.PointUnload(colshape, entity);
+            pointBase.PointUnload(colshape, entity);
         }
         //если колшейп полицеского участка и груз Illegal
         if (this.cargoBase instanceof DeliveryJob.IllegalCargo && this.cargoBase.policeColshapes && this.cargoBase.policeColshapes.includes(colshape) && (this.cargoBase.loadtype === 'Illegal')) {
@@ -201,119 +197,127 @@ handleEntityEnterColshape(colshape, entity) {
 }
 
 // при выходе из колшейпа
-    handleEntityLeaveColshape(colshape, entity) {
-        if (entity instanceof alt.Player) {
-            const marker = this.markerColshapeMap.get(colshape);
-            if (notificationManager.isWebViewOpen !== false){   //если у игрока открыта надпись Нажмите E
+handleEntityLeaveColshape(colshape, entity) {
+    if (entity instanceof alt.Player) {
+        const marker = this.markerColshapeMap.get(colshape);
+        if (notificationManager.isWebViewOpen !== false){   //если у игрока открыта надпись Нажмите E
             notificationManager.hidePersistent();
+        }
+        if (marker && entity === alt.Player.local && marker.originalColor) {
+            marker.color = marker.originalColor;    //смена цвета с зеленого на изначальный (красный), цвет меняется только у маркеров погрузки
+        }
+    }
+}
+
+//класс для работы с точкой погрузки и разгрузки
+static PointBase = class {
+    constructor(deliveryJob) {
+        this.deliveryJob = deliveryJob;
+    }
+
+    //логика для погрузки
+    PointLoad(colshape, entity){
+        const player = alt.Player.local;
+        const marker = this.deliveryJob.markerColshapeMap.get(colshape);
+        if (entity instanceof alt.Player) {
+            if (!player.vehicle) return;    //если игрок не в авто дальнейшие проверки не идут
+                entity = player.vehicle; // Переключение на проверку авто
             }
-            if (marker && entity === alt.Player.local && marker.originalColor) {
-                marker.color = marker.originalColor;    //смена цвета с зеленого на изначальный (красный), цвет меняется только у маркеров погрузки
+            if (marker) {
+                // Если игрок в транспорте, проверка на разрешенные модели авто
+                if (player.vehicle) {   //если неправильная модель авто ничего не происходит, только логи в консоль
+                    if (!this.deliveryJob.allowedVehicles.includes(player.vehicle.model)) {
+                        alt.log(`Vehicle ${player.vehicle.model} is not allowed`);
+                        alt.log(`Неправильное авто`);
+                        return;
+                    }
+                }
+                 // если проверки на правильный тип авто сработали мется цвет маркера и появляется надпись нажмите E для погрузки из WebView
+                marker.originalColor = marker.color;
+                marker.color = new alt.RGBA(0, 255, 0, 200);
+                alt.log(`Вошел в colshape`);
+                notificationManager.showPersistent("Погрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать погрузку");
+            this.deliveryJob.keyCheckHandler = alt.everyTick(() => {    //проверка на нажатие E и соблюдение всех необходимых условий для погрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView) (можно добавить еще проверки на разрешенную модель авто если надо для защиты)
+                if (alt.isKeyDown(69) && (notificationManager.isWebViewOpen !== false) && (this.deliveryJob.currentMarkerType === this.deliveryJob.loadingMarkerType) && (this.deliveryJob.currentLoadingPos.distanceTo(player.pos) < 10)) {
+                    const marker = this.deliveryJob.markerColshapeMap.get(colshape);
+                    notificationManager.hidePersistent();   //При нажатии E закрывается WebView
+                    if (!player.vehicle) {  // Если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
+                        drawNotification('Вы не находитесь в транспорте');
+                        return;
+                    }
+                    if (!this.deliveryJob.allowedVehicles.includes(player.vehicle.model)) { // снова проверка на правильное авто (вдруг игрок заехал в колшейп на правильном авто и невыходя из колшейпа пересел в неправильное авто)
+                        alt.log(`Vehicle ${player.vehicle.model} is not allowed`);
+                        drawNotification('Неправильное авто');
+                        return;
+                    }
+                    drawNotification('Погрузка началась...', true); //true значит что уведмоление пропадет через 3 чекунды
+                    this.deliveryJob.vehicleBlocker.blockPlayerVehicle(player); //блок авто
+                    this.deliveryJob.loadedvehid = player.vehicle.id;   //запоминает сетевой id авто в котором произошла погрузка
+                    alt.log(`Сетевой ID загруженного авто: ${this.deliveryJob.loadedvehid}`);  
+                    setTimeout(() => {  // через 3 секунды окончание погрузки
+                        this.deliveryJob.vehicleBlocker.unblockPlayerVehicle(player);
+                        this.deliveryJob.destroyAllPoints();    //уничтожается блип маркер и колшейп погрузки
+                        this.deliveryJob.cargoBase.SelectCargoType();   //рандомится тип груза (там определяется loadtype)
+                        alt.emitServer('client:setLoadedVehicle', String(this.deliveryJob.cargoBase.loadtype), this.deliveryJob.loadedvehid);   //передается на сервер тип груза и сетевой id загруженного авто
+                        alt.log(`this.cargo.loadtype: ${ this.deliveryJob.cargoBase.loadtype}`);
+                        this.deliveryJob.selectRandomUnloadingPoint(); 
+                    }, 3000);
+                }
+            });
+            if (this.deliveryJob.loadedvehid !== null){     //если авто загрузилось избавляемся от проверки на нажатие E (и остальных требоавний)
+                alt.clearEveryTick(this.deliveryJob.keyCheckHandler);
+                this.deliveryJob.keyCheckHandler = null;
             }
         }
     }
-//логика для погрузки
-    PointLoad(colshape, entity){
-            const player = alt.Player.local;
-            const marker = this.markerColshapeMap.get(colshape);
-            if (entity instanceof alt.Player) {
-                        if (!player.vehicle) return;    //если игрок не в авто дальнейшие проверки не идут
-                        entity = player.vehicle; // Переключение на проверку авто
-                    }
-                    if (marker) {
-                        // Если игрок в транспорте, проверка на разрешенные модели авто
-                        if (player.vehicle) {   //если неправильная модель авто ничего не происходит, только логи в консоль
-                            if (!this.allowedVehicles.includes(player.vehicle.model)) {
-                                alt.log(`Vehicle ${player.vehicle.model} is not allowed`);
-                                alt.log(`Неправильное авто`);
-                                return;
-                            }
-                        }
-                        // если проверки на правильный тип авто сработали мется цвет маркера и появляется надпись нажмите E для погрузки из WebView
-                        marker.originalColor = marker.color;
-                        marker.color = new alt.RGBA(0, 255, 0, 200);
-                        alt.log(`Вошел в colshape`);
-                        notificationManager.showPersistent("Погрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать погрузку");
-                
-                        this.keyCheckHandler = alt.everyTick(() => {    //проверка на нажатие E и соблюдение всех необходимых условий для погрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView)
-                        if (alt.isKeyDown(69) && (notificationManager.isWebViewOpen !== false) && (this.currentMarkerType === this.loadingMarkerType) && (this.currentLoadingPos.distanceTo(player.pos) < 15)) {
-                        const marker = this.markerColshapeMap.get(colshape);
-                            notificationManager.hidePersistent();   //При нажатии E закрывается WebView
-                            if (!player.vehicle) {  // Если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
-                                    drawNotification('Вы не находитесь в транспорте');
-                                    return;
-                            }
-                            if (!this.allowedVehicles.includes(player.vehicle.model)) { // снова проверка на правильное авто (вдруг игрок заехал в колшейп на правильном авто и невыходя из колшейпа пересел в неправильное авто)
-                                alt.log(`Vehicle ${player.vehicle.model} is not allowed`);
-                                drawNotification('Неправильное авто');
-                                return;
-                            }
-                            drawNotification('Погрузка началась...', true); //true значит что уведмоление пропадет через 3 чекунды
-                            this.vehicleBlocker.blockPlayerVehicle(player); //блок авто
-                            this.loadedvehid = player.vehicle.id;   //запоминает сетевой id авто в котором произошла погрузка
-                            alt.log(`Сетевой ID загруженного авто: ${this.loadedvehid}`);  
-                            setTimeout(() => {  // через 3 секунды окончание погрузки
-                                this.vehicleBlocker.unblockPlayerVehicle(player);
-                                this.destroyAllPoints();    //уничтожается блип маркер и колшейп погрузки
-                                this.cargoBase.SelectCargoType();   //рандомится тип груза (там определяется loadtype)
-                                alt.emitServer('client:setLoadedVehicle', String(this.cargoBase.loadtype), this.loadedvehid);   //передается на сервер тип груза и сетевой id загруженного авто
-                                alt.log(`this.cargo.loadtype: ${ this.cargoBase.loadtype}`);
-                                this.selectRandomUnloadingPoint(); 
-                                }, 3000);
-                        }
-                        });
-                        if (this.loadedvehid !== null){     //если авто загрузилось избавляемся от проверки на нажатие E (и остальных требоавний)
-                        alt.clearEveryTick(this.keyCheckHandler);
-                        this.keyCheckHandler = null;
-                        }
-                    }
-    }
-// логика для разгрузки
+
+        // логика для разгрузки
     PointUnload(colshape, entity){
         const player = alt.Player.local;
-        const marker = this.markerColshapeMap.get(colshape);
+        const marker = this.deliveryJob.markerColshapeMap.get(colshape);
         if (entity instanceof alt.Player) {
-                        if (!player.vehicle) return;    //если игрок не в авто дальнейшие проверки не идут
-                        entity = player.vehicle; // Переключение на проверку транспорта
+            if (!player.vehicle) return;    //если игрок не в авто дальнейшие проверки не идут
+            entity = player.vehicle; // Переключение на проверку транспорта
+        }
+        if (marker) {
+            // Если игрок в транспорте, проверяется заехал ли он на точку в том же авто в котором грузился (по сетевому id авто)
+            if (player.vehicle) {
+                if (this.deliveryJob.loadedvehid !== player.vehicle.id){
+                    drawNotification('Это не тот автомобиль который вы загружали');
+                    alt.log(`'Это не тот автомобиль который вы загружали`);
+                    return;
+                }
+            }
+            alt.log(`Вошел в colshape`);
+            //WebView нажмите E для разгрузки
+            notificationManager.showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
+            this.deliveryJob.keyCheckHandler = alt.everyTick(() => {    //проверка на нажатие E и соблюдение всех необходимых условий для разгрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView) (можно добавить еще проверки на разрешенную модель авто если надо для защиты)
+                if (alt.isKeyDown(69) && (notificationManager.isWebViewOpen !== false) && (this.deliveryJob.currentMarkerType === this.deliveryJob.unloadingMarkerType) && (this.deliveryJob.currentUnloadingPos.distanceTo(player.pos) < 15)) {
+                    notificationManager.hidePersistent();        //скрыть WebView               
+                    if (!player.vehicle) {  //если игрок вышел из авто после въезда в колшейп
+                        drawNotification('Вы не находитесь в транспорте');
+                        return;
                     }
-                    if (marker) {
-                        // Если игрок в транспорте, проверяется заехал ли он на точку в том же авто в котором грузился (по сетевому id авто)
-                        if (player.vehicle) {
-                            if (this.loadedvehid !== player.vehicle.id){
-                                drawNotification('Это не тот автомобиль который вы загружали');
-                                 alt.log(`'Это не тот автомобиль который вы загружали`);
-                                return;
-                            }
-                        }
-                        alt.log(`Вошел в colshape`);
-                        //WebView нажмите E для разгрузки
-                        notificationManager.showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
-                        this.keyCheckHandler = alt.everyTick(() => {    //проверка на нажатие E и соблюдение всех необходимых условий для разгрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView)
-                        if (alt.isKeyDown(69) && (notificationManager.isWebViewOpen !== false) && (this.currentMarkerType === this.unloadingMarkerType) && (this.currentUnloadingPos.distanceTo(player.pos) < 15)) {
-                            notificationManager.hidePersistent();        //скрыть WebView               
-                            if (!player.vehicle) {  //если игрок вышел из авто после въезда в колшейп
-                                drawNotification('Вы не находитесь в транспорте');
-                                return;
-                            }
-                            //тут нет проверки как в погрузке, на случай если игрок пересел в другое авто после того как въехал в колшейп на правильном авто, потому что никакую выгоду игроку это не даст 
-                            drawNotification('Разгрузка началась...', true);    //true значит что уведмоление пропадет через 3 чекунды
-                            this.vehicleBlocker.blockPlayerVehicle(player);
-                            setTimeout(() => {  //через 3 секунды разгрузка закончится 
-                                this.vehicleBlocker.unblockPlayerVehicle(player);
-                                this.cargoBase.CargoPayment();  //вызов уведмоления с оплатой
-                                //доставка окончена вся информация стирается
-                                this.loadedvehid = null;    
-                                this.cargoBase.loadtype = null;
-                                this.destroyAllPoints();
-                                }, 3000);
-                        }
-                        }); //если авто разгрузилось избавляемся от проверки на нажатие E (и остальных требоавний)
-                        if (this.loadedvehid === null){
-                        alt.clearEveryTick(this.keyCheckHandler);
-                        this.keyCheckHandler = null;
-                        }
-                    }
+                //тут нет проверки как в погрузке, на случай если игрок пересел в другое авто после того как въехал в колшейп на правильном авто, потому что никакую выгоду игроку это не даст 
+                drawNotification('Разгрузка началась...', true);    //true значит что уведмоление пропадет через 3 чекунды
+                this.deliveryJob.vehicleBlocker.blockPlayerVehicle(player);
+                    setTimeout(() => {  //через 3 секунды разгрузка закончится 
+                        this.deliveryJob.vehicleBlocker.unblockPlayerVehicle(player);
+                        this.deliveryJob.cargoBase.CargoPayment();  //вызов уведмоления с оплатой
+                        //доставка окончена вся информация стирается
+                        this.deliveryJob.loadedvehid = null;    
+                        this.deliveryJob.cargoBase.loadtype = null;
+                        this.deliveryJob.destroyAllPoints();
+                    }, 3000);
+                }
+            }); //если авто разгрузилось избавляемся от проверки на нажатие E (и остальных требоавний)
+            if (this.deliveryJob.loadedvehid === null){
+                alt.clearEveryTick(this.deliveryJob.keyCheckHandler);
+                this.deliveryJob.keyCheckHandler = null;
+            }
+        }
     }
+}
     
     createBlip(point, sprite, color) {
             const blip = new alt.PointBlip(point.x, point.y, point.z);
