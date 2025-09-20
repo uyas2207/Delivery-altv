@@ -402,15 +402,15 @@ destroyAllPoints() {
             destroyedCount++;
         }
     });
-    this.currentLoadingPos =null;
-    this.currentUnloadingPos =null;
     // очистка всех массивов
     this.markers = [];
     this.unloadingBlips = [];
     this.loadingBlips = [];
     this.colshapes = [];
     this.markerColshapeMap.clear();
-    alt.log(`Уничтожено ${destroyedCount} элементов точек погрузки`);
+    alt.log(`Уничтожено ${destroyedCount} элементов погрузки/разгрузки`);
+    this.currentLoadingPos =null;   //по идее обнулять ненужно так как при каждой новой точке записывается новое знаечение, но пусть будет
+    this.currentUnloadingPos =null; //по идее обнулять ненужно так как при каждой новой точке записывается новое знаечение, но пусть будет
 }
 
 selectRandomLoadingPoint() {
