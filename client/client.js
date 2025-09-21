@@ -239,7 +239,6 @@ static PointBase = class {
                 notificationManager.showPersistent("Погрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать погрузку");
             this.deliveryJob.keyCheckHandler = alt.everyTick(() => {    //проверка на нажатие E и соблюдение всех необходимых условий для погрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView) (можно добавить еще проверки на разрешенную модель авто если надо для защиты)
                 if (alt.isKeyDown(69) && (notificationManager.isWebViewOpen !== false) && (this.deliveryJob.currentMarkerType === this.deliveryJob.loadingMarkerType) && (this.deliveryJob.currentLoadingPos.distanceTo(player.pos) < 10)) {
-                    const marker = this.deliveryJob.markerColshapeMap.get(colshape);
                     notificationManager.hidePersistent();   //При нажатии E закрывается WebView
                     if (!player.vehicle) {  // Если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
                         drawNotification('Вы не находитесь в транспорте');
@@ -408,6 +407,8 @@ destroyAllPoints() {
             destroyedCount++;
         }
     });
+    this.currentLoadingPos =null;   //по идее обнулять ненужно так как при каждой новой точке записывается новое знаечение, но пусть будет
+    this.currentUnloadingPos =null; //по идее обнулять ненужно так как при каждой новой точке записывается новое знаечение, но пусть будет
     // очистка всех массивов
     this.markers = [];
     this.unloadingBlips = [];
@@ -415,8 +416,6 @@ destroyAllPoints() {
     this.colshapes = [];
     this.markerColshapeMap.clear();
     alt.log(`Уничтожено ${destroyedCount} элементов погрузки/разгрузки`);
-    this.currentLoadingPos =null;   //по идее обнулять ненужно так как при каждой новой точке записывается новое знаечение, но пусть будет
-    this.currentUnloadingPos =null; //по идее обнулять ненужно так как при каждой новой точке записывается новое знаечение, но пусть будет
 }
 
 selectRandomLoadingPoint() {
