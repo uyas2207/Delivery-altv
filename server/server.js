@@ -7,14 +7,82 @@ import * as fs from 'fs';
 //для работы с путями файлов
 import * as path from 'path';
 
-console.log('==> Your Resource Has Loaded! Horray!');
-
-
 chat.registerCmd("randomload", (player) => {
         // Отправляем команду на клиент для старта новой погрузки (удаляя текущий заказ)
-        alt.emitClient(player, 'client:delivery');
+        alt.emitClient(player, 'client:startDelivery');
         chat.send(player, "Случайная точка погрузки выбрана");
 });
+
+class CargoBase {
+    constructor(type, reward) {
+        this.type = type;
+        this.reward = reward;
+    }
+
+    onDamage(vehicle, attacker, deliveryJob) {
+        // Базовая логика - без обработки урона
+        return false;
+    }
+
+    onSuccessfulDelivery(player) {
+        chat.send(player, `+${this.reward}\\$`);
+    }
+}
+
+// Конкретные типы грузов
+class CommonCargo extends CargoBase {
+    constructor() {
+        super('Common', 1000);
+    }
+}
+
+class HardCargo extends CargoBase {
+    constructor() {
+        super('Hard', 2000);
+    }
+
+    onDamage(vehicle, attacker, deliveryJob) {
+        if (vehicle.valid) {
+            alt.setTimeout(() => {
+                vehicle.destroy();
+                chat.send(attacker, 'Вы уничтожили груз, заказ отменен!');
+                deliveryJob.cancelOrder(attacker);
+            }, 500);
+        }
+        return true;
+    }
+}
+
+class DangerCargo extends CargoBase {
+    constructor() {
+        super('Danger', 3000);
+    }
+
+    onDamage(vehicle, attacker, deliveryJob) {
+        alt.emitClient(attacker, 'explode');
+        alt.setTimeout(() => {
+            if (vehicle.valid) {
+                vehicle.destroy();
+            }
+            chat.send(attacker, 'Вы взорвали груз, заказ отменен!');
+            deliveryJob.cancelOrder(attacker);
+        }, 500);
+        return true;
+    }
+}
+
+class IllegalCargo extends CargoBase {
+    constructor() {
+        super('Illegal', 1500);
+    }
+
+    onPoliceZoneEnter(player, deliveryJob) {
+        chat.send(player, 'Вы находились слишком близко к полицейскому участку, заказ отменен!');
+        deliveryJob.cancelOrder(player);
+        return true;
+    }
+}
+
 //для работы с данными из конфига
 class ConfigManager {
     constructor() {
@@ -59,73 +127,59 @@ class ConfigManager {
         }
     }
 }
-//логика для работы доставки
-class DeliveryJob {
-    constructor() {
+// Основной общий класс системы доставки
+class DeliveryJobSystem {
+    constructor() {  
         this.configManager = new ConfigManager();
-        this.loadtype = null; 
-        this.loadedvehid = null;
         this.init();
     }
 
     init() {
-        //при старте сервера начинает читать данные из конфига
         this.configManager.loadConfig();
-        //при входе игрока отправляет ему данные из конфига
+
         alt.on('playerConnect', (player) => {
-            this.configManager.getLoadingPoints(player);
-            this.configManager.getUnloadingPoints(player);
-            this.configManager.getPoliceStations(player);
-            this.configManager.getAllowedVehicles(player);
-        });
-        //получение информации (тип груза и сетевой id загруженного авто) после загрузки автомобиля на клиенте
-        alt.onClient('client:setLoadedVehicle', (player, loadtype, loadedvehid) => {
-            this.loadtype = loadtype;
-            this.loadedvehid = loadedvehid;
-         alt.log(`Отслеживается груз типа ${this.loadtype}, loadedvehid ${this.loadedvehid}`);
+                    this.configManager.getLoadingPoints(player);
+                    this.configManager.getUnloadingPoints(player);
+                    this.configManager.getPoliceStations(player);
+                    this.configManager.getAllowedVehicles(player);
         });
 
-//логика при получении урона (для hard и danger типов груза)
-alt.on('vehicleDamage', (vehicle, attacker) => {
-    if (!['Hard', 'Danger'].includes(this.loadtype)) return;    //если машина получила урон, но она не загружена hard или danger ничего не делать
-    if ((!vehicle || !vehicle.valid) || (vehicle.id !== this.loadedvehid)) return;  //если машина получила урон, но у нее не стевой id загруженной машины ничего не делать 
+        alt.on('vehicleDamage', (vehicle, attacker) => {
+            //захардкоженная проверка на Hard и Danger убрать в случае добавления логики на получение урона у новых типов груза
+         //   if (!['Hard', 'Danger'].includes(this.loadtype)) return;    //если машина получила урон, но она не загружена hard или danger ничего не делать
+            if ((!vehicle || !vehicle.valid) || (vehicle.id !== this.loadedvehid)) return;  //если машина получила урон, но у нее не стевой id загруженной машины ничего не делать 
+            this.handleVehicleDamage(vehicle, attacker);
+        });
+    }
+
+    handleVehicleDamage(vehicle, attacker) {
+            if (!(attacker instanceof alt.Player) || !attacker.valid) return;
     
-    if (attacker instanceof alt.Player && attacker.valid) {
-    switch (this.loadtype) {//если машина получила урон и она загружена hard или danger
-        case 'Danger':
-            alt.emitClient(attacker, 'explode');    // визуальный взрыв на клиенте
-            alt.setTimeout(() => {  //машина пропадет после 0,5 секнд от взырва
-                if (vehicle.valid) {
-                    vehicle.destroy();
-                    alt.log(`Транспорт Danger уничтожен из-за повреждений`);
-                    this.setLoadedVehicleNull(attacker);    //обнуляется информация о сетвеом id и типе груза + отменяется заказ на клиенте
-                }
-            }, 500);
-            alt.emitClient(attacker, 'drawNotification', 'Вы взорвали груз');
-            alt.emitClient(attacker, 'drawNotification', 'Заказ отменен!');
-            break;
-
-        case 'Hard':
-            if (vehicle.valid) {
-                alt.setTimeout(() => {  //машина пропадет после 0,5 после столкновения
-                    vehicle.destroy();
-                    alt.log(`Транспорт Hard уничтожен из-за повреждений`);
-                alt.emitClient(attacker, 'drawNotification', 'Вы уничтожили груз');
-                alt.emitClient(attacker, 'drawNotification', 'Заказ отменен!');
-                this.setLoadedVehicleNull(attacker);    //обнуляется информация о сетвеом id и типе груза + отменяется заказ на клиенте
-                }, 500);
+            const order = this.activeOrders.get(attacker.id);
+            if (order && order.vehicleId === vehicle.id) {
+                order.handleDamage(vehicle, attacker);
             }
-            break;
+        }
+
+}
+// Конкретный личный заказ доставки
+class DeliveryJob {
+    constructor(player, configManager) {
+        this.player = player;
+        this.configManager = configManager;
+        this.cargo = null;                                                          // текущий тип заказа
+        this.vehicleId = null;
+        this.cargoTypes = [CommonCargo, HardCargo, DangerCargo, IllegalCargo];      //все типы заказа
+        this.state = 'empty';                                                       // empty, loading, delivering, completed, cancelled
     }
-    }
-});
-    }
-    setLoadedVehicleNull(attacker) {
-        alt.emitClient(attacker,'client:clearLoadedVehicle')    //обнуление всей информации о грузе и машине на клиенте + отмена заказа
-        //обнуляется информация о сетвеом id и типе груза на сервере
-        this.loadtype = null;
-        this.loadedvehid = null;
-    }
+
+    start() {
+            this.cargo = this.cargoTypes[Math.floor(Math.random() * this.cargoTypes.length)];
+            alt.emitClient(this.player, 'client:startDelivery', this.cargo);
+            alt.log(`Выбран тип груза: ${this.cargo}`);
+        }
+
 }
 
-new DeliveryJob();
+//new DeliveryJob();
+new DeliveryJobSystem();
