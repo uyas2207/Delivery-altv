@@ -158,7 +158,7 @@ class DeliveryJobSystem {
         });
 
         chat.registerCmd("randomload", (player) => {
-                    this.startNewOrder(player);
+            this.startNewOrder(player);
         });
     }
 

@@ -38,15 +38,15 @@ class NotificationManager {
             
             if (isLoaded === true) {
                 this.isInitialized = true;
-                console.log('Notification manager initialized SUCCESS');
+                alt.log('Notification manager initialized SUCCESS');
             } else {
-                console.log('Notification manager did not initialize FAILURE (timeout)');
+                alt.log('Notification manager did not initialize FAILURE (timeout)');
             }
     }
 
     showPersistent(title, text, id = null) {
         if (!this.isInitialized) {
-            console.log('Notification manager не инициализирован');
+            alt.log('Notification manager не инициализирован');
             return null;
         }
         
@@ -63,6 +63,8 @@ class NotificationManager {
         this.isWebViewOpen = false;
     }
 }
+
+const notificationManager = new NotificationManager();
 
 // Блокировщик транспорта
 class VehicleBlocker {
@@ -125,8 +127,8 @@ class DeliveryJobClient {
             });
 
         // Обработка входа/выхода из колшейпов
-        alt.on('entityEnterColshape', this.handleEnterColshape.bind(this));
-        alt.on('entityLeaveColshape', this.handleLeaveColshape.bind(this));
+        alt.on('entityEnterColshape', this.handleEnterColshapeDeliveryJobClient.bind(this));
+        alt.on('entityLeaveColshape', this.handleLeaveColshapeDeliveryJobClient.bind(this));
 
         }
 
@@ -173,13 +175,24 @@ class DeliveryJobClient {
             }
         }
 
-    handleEnterColshape(colshape, entity) {
-        if (this.currentOrder && entity === alt.Player.local.vehicle) {
-            this.currentOrder.handleColshapeEnter(colshape);
+    handleEnterColshapeDeliveryJobClient(colshape, entity) {
+        const player = alt.Player.local;
+        if (entity instanceof alt.Player) {
+                    if (!player.vehicle) return;
+                    entity = player.vehicle;
+                }
+        alt.log(`this.currentOrder: ${this.currentOrder}`);
+        if ((this.currentOrder !== null)) {
+            alt.log(`Вошел в колшейп`);
+            this.currentOrder.handleColshapeEnterDeliveryOrder(colshape);
         }
     }
 
-    handleLeaveColshape(colshape, entity) {
+    handleLeaveColshapeDeliveryJobClient(colshape, entity) {
+        alt.log(`Вышел из колшейпа`);
+        if (notificationManager.isWebViewOpen !== false){
+                notificationManager.hidePersistent();
+            }
         if (this.currentOrder && entity === alt.Player.local.vehicle) {
             this.currentOrder.handleColshapeLeave(colshape);
         }
@@ -214,12 +227,12 @@ class DeliveryOrder {
             // Выбор случайных точек            
             this.loadingPoint = this.loadingPoints[Math.floor(Math.random() * this.loadingPoints.length)];
             this.unloadingPoint = this.unloadingPoints[Math.floor(Math.random() * this.unloadingPoints.length)];
-            
+            /*
             // Проверка для нелегального 
             if (this.cargoType === 'Illegal') {
                 this.distanceFromPoliceStations();
             }
-            
+            */
             resolve();
         });
     }
@@ -239,16 +252,9 @@ class DeliveryOrder {
         }
     }
 
- createLoadingPoint() {
-        const pointConfig = this.loadingPoint;
-        
+    createLoadingPoint() {
         // Создаем визуальные элементы
-        const pointVisuals = new PointVisuals(
-            new alt.Vector3(pointConfig.x, pointConfig.y, pointConfig.z),
-            pointConfig.radius,
-            pointConfig.markerType,
-            pointConfig.blipSprite
-        ).create();
+        const pointVisuals = new PointVisuals(this.loadingPoint).create();
         
         // Создаем PointBase с поведением
         this.loadingPoint = new PointBase('loading', this, pointVisuals);
@@ -260,7 +266,7 @@ class DeliveryOrder {
         // Создаем визуальные элементы
         const pointVisuals = new PointVisuals(
             new alt.Vector3(pointConfig.x, pointConfig.y, pointConfig.z),
-            pointConfig.radius,
+            pointConfig.colshapeRadius,
             pointConfig.markerType,
             pointConfig.blipSprite
         ).create();
@@ -269,68 +275,52 @@ class DeliveryOrder {
         this.unloadingPoint = new PointBase('unloading', this, pointVisuals);
     }
 
-    handleColshapeEnter(colshape) {
+    handleColshapeEnterDeliveryOrder(colshape) {
         // если в будущем будет добавлено больше колшейпов
         if (!this.loadingPoint || !this.unloadingPoint) return;
 
-        const player = alt.Player.local;
-        const vehicle = player.vehicle;
-        
-        if (colshape === this.loadingPoint.colshape && this.state === 'waiting_for_loading') {
-            this.startLoadingProcess(vehicle);
-            return;
+        if (colshape === this.loadingPoint.pointVisuals.colshape && this.state === 'waiting_for_loading') {
+            this.loadingPoint.PointLoad(colshape, alt.Player.local.vehicle);
+        } else if (colshape === this.unloadingPoint.pointVisuals.colshape && this.state === 'delivering') {
+            this.unloadingPoint.PointUnload(colshape, alt.Player.local.vehicle);
         }
-        if (colshape === this.unloadingPoint.colshape && this.state === 'delivering') {
-            this.startUnloadingProcess(vehicle);
-        //    return;
-        }
-    }
-
-    startLoadingProcess(vehicle) {
-        if (!this.isVehicleAllowed(vehicle)) {
-            this.notificationSystem.showNativeNotification('Транспорт не подходит для перевозки');
-            return;
-        }
-
-        this.notificationSystem.showNativeNotification('Нажмите E для начала погрузки');
-        this.setupKeyPressHandler('loading', vehicle);
     }
 
 }
 
 // Класс для создания и уничтожения визуальных элементов точки
 class PointVisuals {
-    constructor(position, radius, markerType, blipSprite) {
-        this.position = position;
-        this.radius = radius;
-        this.markerType = markerType;
-        this.blipSprite = blipSprite;
+    constructor(pointConfig) {
+        this.pointConfig = pointConfig;
+        this.position = new alt.Vector3(pointConfig.x, pointConfig.y, pointConfig.z);
+
         this.marker = null;
         this.blip = null;
         this.colshape = null;
     }
 
     create() {
-        // Создание маркера
-        this.marker = new alt.Marker(
-            this.markerType,
-            this.position,
-            new alt.RGBA(255, 0, 0, 200)
-        );
+    // Создание маркера
+    this.marker = new alt.Marker(
+        this.pointConfig.markerType, // значение по умолчанию
+        this.position, // используем уже созданный position
+        new alt.RGBA(this.pointConfig.markerColor[0], this.pointConfig.markerColor[1], this.pointConfig.markerColor[2], this.pointConfig.markerColor[3]) //полученные из конфига значения цвета
+    );
 
-        // Создание блипа
-        this.blip = new alt.PointBlip(this.position.x, this.position.y, this.position.z);
-        this.blip.sprite = this.blipSprite;
-        this.blip.color = 1;
-        this.blip.shortRange = true;
+    // Создание блипа
+    this.blip = new alt.PointBlip(this.position.x, this.position.y, this.position.z);
+    this.blip.sprite = this.pointConfig.blipSprite;
+    this.blip.color = this.pointConfig.blipColor;
+    this.blip.name = this.pointConfig.name;
+    this.blip.shortRange = this.pointConfig.blipShortRange;
 
-        // Создание колшейпа
-        this.colshape = new alt.ColshapeSphere(
-            this.position.x, 
-            this.position.y, 
-            this.position.z, 
-            this.radius
-        );
+    // Создание колшейпа
+    this.colshape = new alt.ColshapeSphere(
+        this.position.x, 
+        this.position.y, 
+        this.position.z, 
+        this.pointConfig.colshapeRadius
+    );
 
         return this;
     }
@@ -348,30 +338,27 @@ class PointBase {
         this.type = type;
         this.deliveryJob = deliveryJob;
         this.pointVisuals = pointVisuals;
+        
     }
 
     // Метод PointLoad - инкапсулирует поведение точки погрузки
     PointLoad(colshape, entity) {
         const player = alt.Player.local;
+        /*
         if (entity instanceof alt.Player) {
             if (!player.vehicle) return;
             entity = player.vehicle;
         }
-
+        */
         // Проверка на разрешенные модели авто
-        if (player.vehicle && !this.deliveryJob.isVehicleAllowed(player.vehicle)) {
-            this.deliveryJob.notificationSystem.showNativeNotification('Транспорт не подходит для перевозки');
+        if (player.vehicle && !this.deliveryJob.allowedVehicles.includes(player.vehicle.model)) {
+            drawNotification('Транспорт не подходит для перевозки');
             return;
         }
 
-        // Изменение цвета маркера
-        if (this.pointVisuals.marker) {
-            this.pointVisuals.marker.originalColor = this.pointVisuals.marker.color;
-            this.pointVisuals.marker.color = new alt.RGBA(0, 255, 0, 200);
-        }
+        notificationManager.showPersistent("Погрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать погрузку");
         
-        this.deliveryJob.notificationSystem.showNativeNotification('Нажмите E для начала погрузки');
-        this.deliveryJob.setupKeyPressHandler('loading', player.vehicle, this);
+    //    this.deliveryJob.setupKeyPressHandler('loading', player.vehicle, this);
     }
 
     // Метод PointUnload - инкапсулирует поведение точки разгрузки
@@ -384,18 +371,19 @@ class PointBase {
 
         // Проверка что это тот же транспорт
         if (player.vehicle && this.deliveryJob.vehicleId !== player.vehicle.id) {
-            this.deliveryJob.notificationSystem.showNativeNotification('Это не тот транспорт, в который был загружен груз');
+            drawNotification('Это не тот транспорт, в который был загружен груз');
             return;
         }
 
-        this.deliveryJob.notificationSystem.showNativeNotification('Нажмите E для начала разгрузки');
+        notificationManager.showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
         this.deliveryJob.setupKeyPressHandler('unloading', player.vehicle, this);
     }
 }
 
 
-new NotificationManager();
+
 new DeliveryJobClient();
 
 //Добавить в DeliveryJobClient создание точек полиции через PointBase
 //переделать createLoadingPoint и PointBase (много ненужной информации)
+// избавиться от const notificationManager = new NotificationManager();
