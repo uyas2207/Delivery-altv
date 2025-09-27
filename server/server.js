@@ -7,11 +7,13 @@ import * as fs from 'fs';
 //для работы с путями файлов
 import * as path from 'path';
 
+/*
 chat.registerCmd("randomload", (player) => {
         // Отправляем команду на клиент для старта новой погрузки (удаляя текущий заказ)
         alt.emitClient(player, 'client:startDelivery');
         chat.send(player, "Случайная точка погрузки выбрана");
 });
+*/
 
 class CargoBase {
     constructor(type, reward) {
@@ -144,13 +146,34 @@ class DeliveryJobSystem {
                     this.configManager.getAllowedVehicles(player);
         });
 
+        alt.onClient('client:startLoading', (player, vehicleId) => {
+            this.startLoading(player, vehicleId);
+        });
+
         alt.on('vehicleDamage', (vehicle, attacker) => {
             //захардкоженная проверка на Hard и Danger убрать в случае добавления логики на получение урона у новых типов груза
          //   if (!['Hard', 'Danger'].includes(this.loadtype)) return;    //если машина получила урон, но она не загружена hard или danger ничего не делать
             if ((!vehicle || !vehicle.valid) || (vehicle.id !== this.loadedvehid)) return;  //если машина получила урон, но у нее не стевой id загруженной машины ничего не делать 
             this.handleVehicleDamage(vehicle, attacker);
         });
+
+        chat.registerCmd("randomload", (player) => {
+                    this.startNewOrder(player);
+        });
     }
+
+    startNewOrder(player) {
+        // Отменяем текущий заказ если есть
+      /*  if (this.activeOrders.has(player.id)) {
+            this.cancelOrder(player);
+        }
+*/
+        const order = new DeliveryJob(player, this.configManager);
+    //    this.activeOrders.set(player.id, order);
+        order.start();
+        
+        chat.send(player, "Случайная точка погрузки выбрана");
+    }    
 
     handleVehicleDamage(vehicle, attacker) {
             if (!(attacker instanceof alt.Player) || !attacker.valid) return;
@@ -174,10 +197,32 @@ class DeliveryJob {
     }
 
     start() {
-            this.cargo = this.cargoTypes[Math.floor(Math.random() * this.cargoTypes.length)];
-            alt.emitClient(this.player, 'client:startDelivery', this.cargo);
-            alt.log(`Выбран тип груза: ${this.cargo}`);
+            const CargoClass = this.cargoTypes[Math.floor(Math.random() * this.cargoTypes.length)];
+            this.cargo = new CargoClass();
+            alt.log(`Выбран тип груза: ${this.cargo.type}`);
+            alt.emitClient(this.player, 'client:startDelivery', this.cargo.type);
         }
+
+    startLoading(vehicleId) {
+        this.vehicleId = vehicleId;
+        this.state = 'loading';
+    }
+
+    complete() {
+        this.state = 'completed';
+        this.cargo.onSuccessfulDelivery(this.player);
+    }
+
+    cancel() {
+        this.state = 'cancelled';
+        alt.emitClient(this.player, 'client:cancelDelivery');
+    }
+
+    handleDamage(vehicle, attacker) {
+        if (this.state === 'delivering') {
+            this.cargo.onDamage(vehicle, attacker, this);
+        }
+    }
 
 }
 
