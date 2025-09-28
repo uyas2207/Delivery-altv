@@ -133,6 +133,7 @@ class ConfigManager {
 class DeliveryJobSystem {
     constructor() {  
         this.configManager = new ConfigManager();
+        this.activeOrders = new Map();
         this.init();
     }
 
@@ -191,8 +192,8 @@ class DeliveryJob {
         this.player = player;
         this.configManager = configManager;
         this.cargo = null;                                                          // текущий тип заказа
-        this.vehicleId = null;
-        this.cargoTypes = [CommonCargo, HardCargo, DangerCargo, IllegalCargo];      //все типы заказа
+        this.loadedVehId = null;
+        this.cargoTypes = [CommonCargo];      //все типы заказа  HardCargo, DangerCargo, IllegalCargo
         this.state = 'empty';                                                       // empty, loading, delivering, completed, cancelled
     }
 
@@ -204,7 +205,7 @@ class DeliveryJob {
         }
 
     startLoading(vehicleId) {
-        this.vehicleId = vehicleId;
+        this.loadedVehId = vehicleId;
         this.state = 'loading';
     }
 
