@@ -195,7 +195,7 @@ class DeliveryJobClient {
                 this.policeColshapes,
                 
                 this.notificationSystem,
-                this.vehicleBlocker
+                this.vehicleBlocker,
             );
             this.currentOrder.deliveryJobClient = this; // cсылка для последующего обнуления
             this.currentOrder.start();
@@ -232,16 +232,17 @@ class DeliveryJobClient {
 
 // Конкретный заказ на клиенте, создается только при старте доставки у конкретного игрока (не при входе на сервер)
 class DeliveryOrder {
-    constructor(cargoType, unloadingPoints, loadingPoints, allowedVehicles, policeStations, notificationSystem, vehicleBlocker, policeColshapes) {
+    constructor(cargoType, unloadingPoints, loadingPoints, allowedVehicles, policeStations, policeColshapes, notificationSystem, vehicleBlocker) {
         //Данные из конфига
         this.cargoType = cargoType;
         this.unloadingPoints = unloadingPoints;
         this.loadingPoints = loadingPoints;
         this.allowedVehicles = allowedVehicles;
         this.policeStations = policeStations;
+        this.policeColshapes = policeColshapes;
         this.notificationSystem = notificationSystem;
         this.vehicleBlocker = vehicleBlocker;
-        this.policeColshapes = policeColshapes;
+        
         
         this.loadingPoint = null;
         this.unloadingPoint = null;
@@ -310,18 +311,26 @@ class DeliveryOrder {
 
     handleColshapeEnterDeliveryOrder(colshape) {
         alt.log(`alt.Player.local.vehicle.id: ${alt.Player.local.vehicle.id}`)
+        
+       // alt.log(`this.unloadingPoint: ${this.unloadingPoint}`)
+         //alt.log(`this.loadingPoint: ${this.loadingPoint}`)
         // если в будущем будет добавлено больше колшейпов
         if (!this.loadingPoint || !this.unloadingPoint || !this.policeColshapes) return;
 
         if (colshape === this.loadingPoint.pointVisuals.colshape && this.state === 'waiting_for_loading') {
             this.loadingPoint.PointLoad(colshape, alt.Player.local.vehicle);
+        } 
+        if (this.state === 'delivering') {
+            if (colshape === this.unloadingPoint.pointVisuals.colshape){
+                this.unloadingPoint.PointUnload(colshape, alt.Player.local.vehicle);
+           }
         }
-        if (colshape === this.unloadingPoint.pointVisuals.colshape && this.state === 'delivering') {
-            this.unloadingPoint.PointUnload(colshape, alt.Player.local.vehicle);
-        }
+        
         if((this.state === 'delivering') && (this.cargoType === 'Illegal') && (alt.Player.local.vehicle.id === this.loadedVehId)){
+            alt.log(`после проверки на illegal и loadedvehid`)
         alt.emitServer('client:failDelivery');
         }
+        
     }
 
     handleColshapeLeave(colshape) {

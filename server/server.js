@@ -160,8 +160,8 @@ class DeliveryJobSystem {
             this.completeDelivery(player);
         });
 
-        alt.on('client:failDelivery', (player) => {
-            this.cancelOrder(player);
+        alt.onClient('client:failDelivery', (player) => {
+            this.failDelivery(player);
         });
 
         alt.on('vehicleDamage', (vehicle, attacker) => {
@@ -196,6 +196,14 @@ class DeliveryJobSystem {
             alt.log(`this.activeOrders(player.id): ${this.activeOrders(player.id)}`);
         }
     }
+
+    failDelivery(player) {
+        const order = this.activeOrders.get(player.id);
+        if (order) {
+            order.fail(); // Делегируем логику провала конкретному заказу
+        }
+    }
+/*
     //Для работы команды cancelorder
     cancelOrder(player) {
         const order = this.activeOrders.get(player.id);
@@ -204,7 +212,7 @@ class DeliveryJobSystem {
             this.activeOrders.delete(player.id);
         }
     }
-
+*/
     startNewOrder(player) {
         // Отменяем текущий заказ если есть
         /*
@@ -260,6 +268,15 @@ class DeliveryJob {
     cancel() {
         this.state = 'empty';
         alt.emitClient(this.player, 'client:cancelDelivery');
+    }
+
+    fail() {
+        if (this.state === 'delivering' && this.cargo instanceof IllegalCargo) {
+            // Вызываем метод конкретного типа груза для обработки провала
+            this.cargo.onPoliceZoneEnter(this.player, this);
+        } else {
+            alt.log(`Попытка провала доставки в неправильном состоянии или для неправильного груза`);
+        }
     }
 
     handleDamage(vehicle, attacker) {
