@@ -192,6 +192,7 @@ class DeliveryJobClient {
                 this.loadingPoints,
                 this.allowedVehicles,
                 this.policeStations,
+                this.policeColshapes,
                 
                 this.notificationSystem,
                 this.vehicleBlocker
@@ -231,7 +232,7 @@ class DeliveryJobClient {
 
 // Конкретный заказ на клиенте, создается только при старте доставки у конкретного игрока (не при входе на сервер)
 class DeliveryOrder {
-    constructor(cargoType, unloadingPoints, loadingPoints, allowedVehicles, policeStations, notificationSystem, vehicleBlocker) {
+    constructor(cargoType, unloadingPoints, loadingPoints, allowedVehicles, policeStations, notificationSystem, vehicleBlocker, policeColshapes) {
         //Данные из конфига
         this.cargoType = cargoType;
         this.unloadingPoints = unloadingPoints;
@@ -240,6 +241,7 @@ class DeliveryOrder {
         this.policeStations = policeStations;
         this.notificationSystem = notificationSystem;
         this.vehicleBlocker = vehicleBlocker;
+        this.policeColshapes = policeColshapes;
         
         this.loadingPoint = null;
         this.unloadingPoint = null;
@@ -311,13 +313,13 @@ class DeliveryOrder {
         // если в будущем будет добавлено больше колшейпов
         if (!this.loadingPoint || !this.unloadingPoint || !this.policeColshapes) return;
 
-        if (colshape === this.loadingPoint.pointVisuals.colshape && this.state === 'waiting_for_loading' && (colshape.isPoliceZone !== true)) {
+        if (colshape === this.loadingPoint.pointVisuals.colshape && this.state === 'waiting_for_loading') {
             this.loadingPoint.PointLoad(colshape, alt.Player.local.vehicle);
         }
-        if (colshape === this.unloadingPoint.pointVisuals.colshape && this.state === 'delivering' && (colshape.isPoliceZone !== true)) {
+        if (colshape === this.unloadingPoint.pointVisuals.colshape && this.state === 'delivering') {
             this.unloadingPoint.PointUnload(colshape, alt.Player.local.vehicle);
         }
-        if((this.state === 'delivering') && (colshape.isPoliceZone === true) && (this.cargoType === 'Illegal') && (alt.Player.local.vehicle.id === this.loadedVehId)){
+        if((this.state === 'delivering') && (this.cargoType === 'Illegal') && (alt.Player.local.vehicle.id === this.loadedVehId)){
         alt.emitServer('client:failDelivery');
         }
     }
