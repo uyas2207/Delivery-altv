@@ -95,7 +95,8 @@ class DeliveryJobClient {
 
         this.loadingMarkerType = null;
         this.unloadingMarkerType = null;
-
+        this.policeColshapes = []; // Массив для хранения колшейпов полиции
+        
         this.state = 'selecting_points';
         this.currentOrder = null;                       // В будущем класс для конкретного заказа, пока что null что бы не использовать что либо что относится только к конкретному заказау до того как игрок начнет конкретный заказ
 
@@ -125,13 +126,27 @@ class DeliveryJobClient {
             
             alt.onServer('client:startDelivery', (cargoType) => {
                 this.startNewOrder(cargoType);
-                /*
-                this.destroyAllPoints();
-                this.loadedvehid = null;
-                this.cargoBase.loadtype = null;
-                this.selectRandomLoadingPoint();
-                */
+                alt.log(`cargoType ${cargoType}`);
             });
+
+            alt.onServer('client:cancelDelivery', () => {
+                this.cancelCurrentOrder();
+            });
+
+            alt.onServer("explode",() =>{
+                        const player = alt.Player.local;
+                        native.addExplosion(
+                            player.vehicle.pos.x,
+                            player.vehicle.pos.y,
+                            player.vehicle.pos.z,
+                            9, // тип взрыва (9 - Vehicle)
+                            5.0, // радиус
+                            true, // звук
+                            false, // невидимый огонь
+                            0.0, // камера shake
+                            true
+                        );
+                    });
 
         // Обработка входа/выхода из колшейпов
         alt.on('entityEnterColshape', this.handleEnterColshapeDeliveryJobClient.bind(this));
@@ -140,8 +155,15 @@ class DeliveryJobClient {
         }
 
         createPoliceBlips() {
-                this.policeStations.forEach(station => {
+                this.policeStations.forEach((station, index) => {
                     const item = this.createBlip(station, station.blipSprite, station.blipColor);
+                    
+                    const colshape = new alt.ColshapeSphere(station.x, station.y, station.z, 350);
+
+                    colshape.policeStationId = index;
+                    colshape.isPoliceZone = true;
+            
+                    this.policeColshapes.push(colshape);
                 });
                 alt.log(`Создано ${this.policeStations.length} полицейских участков`);
             }
@@ -156,6 +178,8 @@ class DeliveryJobClient {
             return blip;
         }    
         
+        createPoliceColshapes() {}
+
         startNewOrder(cargoType) {
             if (this.currentOrder) {
                 this.cancelCurrentOrder();
@@ -167,39 +191,39 @@ class DeliveryJobClient {
                 this.unloadingPoints,
                 this.loadingPoints,
                 this.allowedVehicles,
-                this.policeStations,
+                this.policeColshapes,
                 
                 this.notificationSystem,
                 this.vehicleBlocker
             );
+            this.currentOrder.deliveryJobClient = this; // cсылка для последующего обнуления
             this.currentOrder.start();
         }
 
         cancelCurrentOrder() {
             if (this.currentOrder) {
                 this.currentOrder.cancel();
-                this.currentOrder = null;
+                this.currentOrder = null;   //обнуление ссылки
             }
         }
 
     handleEnterColshapeDeliveryJobClient(colshape, entity) {
         const player = alt.Player.local;
+        //проверка на то что игрок в машине, в доставке если игрок не в машине ничего никогда не происходит
         if (entity instanceof alt.Player) {
-                    if (!player.vehicle) return;
-                }
-        // проверка на случай если будут добавлены еще колшейпы
-        if ((this.currentOrder !== null)) {
+            if (!player.vehicle) return;
+        }
+        // проверка на случай если будут добавлены еще колшейпы и в них зайдет игрок без заказа доставки
+        if (this.currentOrder !== null) {
             alt.log(`Вошел в колшейп`);
             this.currentOrder.handleColshapeEnterDeliveryOrder(colshape);
         }
     }
 
     handleLeaveColshapeDeliveryJobClient(colshape, entity) {
-        if (entity instanceof alt.Player) {
             if (notificationManager.isWebViewOpen !== false){
                 notificationManager.hidePersistent();
-                this.currentOrder.handleColshapeLeave(colshape);
-            }
+                this.currentOrder.handleColshapeLeave(colshape, entity);
         }
     }     
 
@@ -220,6 +244,7 @@ class DeliveryOrder {
         this.loadingPoint = null;
         this.unloadingPoint = null;
         this.loadedVehId = null;
+        this.deliveryJobClient = null; //переменная для хранения ссылки
     }
 
     async start() {
@@ -235,26 +260,31 @@ class DeliveryOrder {
             this.loadingPoint = this.loadingPoints[Math.floor(Math.random() * this.loadingPoints.length)];
             this.unloadingPoint = this.unloadingPoints[Math.floor(Math.random() * this.unloadingPoints.length)];
             
-            /*
+            
             // Проверка для нелегального 
             if (this.cargoType === 'Illegal') {
                 this.distanceFromPoliceStations();
             }
-            */
             resolve();
         });
     }
 
     distanceFromPoliceStations() {
         const minDistance = 350;
+
+        // Преобразуем unloadingPoint в Vector3 для расчета расстояния
+        const unloadingPos = new alt.Vector3(this.unloadingPoint.x, this.unloadingPoint.y, this.unloadingPoint.z);
         
         let isTooClose = this.policeStations.some(station => {
-            const distance = this.unloadingPoint.distanceTo(station);
+            const stationPos = new alt.Vector3(station.x, station.y, station.z);
+             const distance = unloadingPos.distanceTo(stationPos);
+            alt.log(`Расстояние до полицейского участка ${station.name}: ${distance}`);
             return (distance < minDistance); //если distance меньше чем 350 isTooClose = true 
         });
         
         if (isTooClose === true) {
             // Перевыбираем точку разгрузки, не меняя точки погрузки
+            alt.log(`Точка разгрузки слишком близко к полиции, выбираем новую...`);
             this.unloadingPoint = this.unloadingPoints[Math.floor(Math.random() * this.unloadingPoints.length)];
             this.distanceFromPoliceStations(); // Рекурсивная проверка
         }
@@ -269,49 +299,93 @@ class DeliveryOrder {
     }
 
     createUnloadingPoint() {
-        const pointConfig = this.unloadingPoint;
-        
         // Создаем визуальные элементы
-        const pointVisuals = new PointVisuals(
-            new alt.Vector3(pointConfig.x, pointConfig.y, pointConfig.z),
-            pointConfig.colshapeRadius,
-            pointConfig.markerType,
-            pointConfig.blipSprite
-        ).create();
+        const pointVisuals = new PointVisuals(this.unloadingPoint).create();
         
         // Создаем PointBase с поведением
         this.unloadingPoint = new PointBase('unloading', this, pointVisuals);
     }
 
     handleColshapeEnterDeliveryOrder(colshape) {
+        alt.log(`alt.Player.local.vehicle.id: ${alt.Player.local.vehicle.id}`)
         // если в будущем будет добавлено больше колшейпов
-        if (!this.loadingPoint || !this.unloadingPoint) return;
+        if (!this.loadingPoint || !this.unloadingPoint || !this.policeColshapes) return;
 
         if (colshape === this.loadingPoint.pointVisuals.colshape && this.state === 'waiting_for_loading') {
             this.loadingPoint.PointLoad(colshape, alt.Player.local.vehicle);
-        } else if (colshape === this.unloadingPoint.pointVisuals.colshape && this.state === 'delivering') {
+        }
+        if (colshape === this.unloadingPoint.pointVisuals.colshape && this.state === 'delivering') {
             this.unloadingPoint.PointUnload(colshape, alt.Player.local.vehicle);
+        }
+        if((this.state === 'delivering') && (colshape.isPoliceZone) && (this.cargoType === 'Illegal') && (alt.Player.local.vehicle.id === this.loadedVehId)){
+        alt.emitServer('client:failDelivery');
         }
     }
 
     handleColshapeLeave(colshape) {
     // Очищаем обработчики клавиш при выходе из колшейпа
-        this.loadingPoint.cleanup();
+        if (this.loadingPoint) {
+            this.loadingPoint.cleanup();
+        }
+        if (this.unloadingPoint) {
+            this.unloadingPoint.cleanup();
+        }
     }
 
-    async executeUnloading(vehicle) {
+    async executeLoading(vehicle) {
         drawNotification('Начало погрузки...', true);   //true значит что уведмоление пропадет через 3 чекунды
-        await this.vehicleBlocker.blockVehicleForThreeSeconds(player.vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
+        await this.vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
         drawNotification('Авто загружено...', true);
 
         this.loadedVehId = vehicle.id;
 
-        this.pointVisuals.destroy();
+        this.loadingPoint.pointVisuals.destroy();
         this.createUnloadingPoint();
         this.state = 'delivering';
         
         alt.emitServer('client:startLoading', this.loadedVehId);
 
+    }
+
+    async executeUnloading(vehicle) {
+        drawNotification('Начало разгрузки...', true);   //true значит что уведмоление пропадет через 3 чекунды
+        await this.vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
+        drawNotification('Авто разгружено...', true);
+
+        this.loadedVehId = null;
+
+        this.unloadingPoint.pointVisuals.destroy();
+        this.state = 'empty';
+        
+        alt.emitServer('client:completeDelivery');
+        drawNotification(`Доставка завершена! Груз: ${this.cargoType}`);
+
+            this.deliveryJobClient.currentOrder = null;
+
+    }
+
+     cancel() {
+        // ПОЛНАЯ ОЧИСТКА РЕСУРСОВ
+        alt.log(`this.state ДО ${this.state}`);
+        if (this.state === 'waiting_for_loading') {
+            alt.log(`ПОЛНАЯ ОЧИСТКА РЕСУРСОВ loadingPoint до`);
+            this.loadingPoint.cleanup();
+            this.loadingPoint.pointVisuals.destroy();
+            this.state = 'empty';
+        }
+        if (this.state === 'delivering') {
+            alt.log(`ПОЛНАЯ ОЧИСТКА РЕСУРСОВ unloadingPoint до`);
+            this.unloadingPoint.cleanup();
+            this.unloadingPoint.pointVisuals.destroy();
+            this.loadedVehId = null;
+            this.state = 'empty';
+        }
+        
+        alt.log(`this.state ПОСЛЕ ${this.state}`);
+        // ОБНУЛЕНИЕ В РОДИТЕЛЕ
+        if (this.deliveryJobClient) {
+            this.deliveryJobClient.currentOrder = null;
+        }
     }
 
 }
@@ -372,14 +446,9 @@ class PointBase {
     // Метод PointLoad - инкапсулирует поведение точки погрузки
     PointLoad(colshape, entity) {
         const player = alt.Player.local;
-        /*
-        if (entity instanceof alt.Player) {
-            if (!player.vehicle) return;
-            entity = player.vehicle;
-        }
-        */
+
         // Проверка на разрешенные модели авто
-        if (player.vehicle && !this.deliveryJob.allowedVehicles.includes(player.vehicle.model)) {
+        if (!this.deliveryJob.allowedVehicles.includes(player.vehicle.model)) {
             drawNotification('Транспорт не подходит для перевозки');
             return;
         }
@@ -407,7 +476,7 @@ class PointBase {
                     drawNotification('Неправильное авто');
                     return;
                 }
-                alt.log('this.deliveryJob.executeLoading (player.vehicle)');
+                alt.log('Началась погрузка');
                 this.deliveryJob.executeLoading (player.vehicle);
 
                 /*
@@ -421,7 +490,48 @@ class PointBase {
         // Регистрируем обработчик
         alt.on('keydown', this.keyPressHandler);
         alt.log('Создан обработчик 1')
-    //    this.deliveryJob.setupKeyPressHandler('loading', player.vehicle, this);
+    }
+
+    // Метод PointUnload - инкапсулирует поведение точки разгрузки
+    PointUnload(colshape, entity) {
+        const player = alt.Player.local;
+
+        // Проверка что это тот же транспорт
+        if (this.deliveryJob.loadedVehId !== player.vehicle.id) {
+            drawNotification('Это не тот транспорт, в который был загружен груз');
+            return;
+        }
+
+        notificationManager.showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
+
+        this.keyPressHandler = (key) => {
+            if ((key === 69) && (notificationManager.isWebViewOpen !== false) && (this.pointVisuals.position.distanceTo(player.pos) < 15)) {
+                // Удаляем обработчик после нажатия
+                this.cleanup();
+                notificationManager.hidePersistent();
+                //проверку ниже можно убрать, так как если игрок вышел из авто и/или пересел в другую машину ему это не даст никакого приемущества (но для логики игрового процесса стоит остаивть)
+                if (!player.vehicle) {  // Если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
+                        drawNotification('Вы не находитесь в транспорте');
+                        return;
+                }
+                if (this.deliveryJob.loadedVehId !== player.vehicle.id) {
+                    drawNotification('Это не тот транспорт, в который был загружен груз');
+                return;
+                }
+                alt.log('Началась разгрузка');
+                this.deliveryJob.executeUnloading (player.vehicle);
+
+                /*
+                drawNotification('Начало погрузки...', true);   //true значит что уведмоление пропадет через 3 чекунды
+                await this.deliveryJob.vehicleBlocker.blockVehicleForThreeSeconds(player.vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
+                drawNotification('Авто загружено...', true);
+                */
+            }   
+        };
+
+        // Регистрируем обработчик
+        alt.on('keydown', this.keyPressHandler);
+        alt.log('Создан обработчик разгрузки')
     }
 
         // Метод для очистки обработчика keyPressHandler
@@ -432,24 +542,6 @@ class PointBase {
                 this.keyPressHandler = null;
             }
         }
-
-    // Метод PointUnload - инкапсулирует поведение точки разгрузки
-    PointUnload(colshape, entity) {
-        const player = alt.Player.local;
-        if (entity instanceof alt.Player) {
-            if (!player.vehicle) return;
-            entity = player.vehicle;
-        }
-
-        // Проверка что это тот же транспорт
-        if (player.vehicle && this.deliveryJob.vehicleId !== player.vehicle.id) {
-            drawNotification('Это не тот транспорт, в который был загружен груз');
-            return;
-        }
-
-        notificationManager.showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
-        this.deliveryJob.setupKeyPressHandler('unloading', player.vehicle, this);
-    }
 }
 
 
