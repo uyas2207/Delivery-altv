@@ -191,7 +191,7 @@ class DeliveryJobClient {
                 this.unloadingPoints,
                 this.loadingPoints,
                 this.allowedVehicles,
-                this.policeColshapes,
+                this.policeStations,
                 
                 this.notificationSystem,
                 this.vehicleBlocker
@@ -311,13 +311,13 @@ class DeliveryOrder {
         // если в будущем будет добавлено больше колшейпов
         if (!this.loadingPoint || !this.unloadingPoint || !this.policeColshapes) return;
 
-        if (colshape === this.loadingPoint.pointVisuals.colshape && this.state === 'waiting_for_loading') {
+        if (colshape === this.loadingPoint.pointVisuals.colshape && this.state === 'waiting_for_loading' && (colshape.isPoliceZone !== true)) {
             this.loadingPoint.PointLoad(colshape, alt.Player.local.vehicle);
         }
-        if (colshape === this.unloadingPoint.pointVisuals.colshape && this.state === 'delivering') {
+        if (colshape === this.unloadingPoint.pointVisuals.colshape && this.state === 'delivering' && (colshape.isPoliceZone !== true)) {
             this.unloadingPoint.PointUnload(colshape, alt.Player.local.vehicle);
         }
-        if((this.state === 'delivering') && (colshape.isPoliceZone) && (this.cargoType === 'Illegal') && (alt.Player.local.vehicle.id === this.loadedVehId)){
+        if((this.state === 'delivering') && (colshape.isPoliceZone === true) && (this.cargoType === 'Illegal') && (alt.Player.local.vehicle.id === this.loadedVehId)){
         alt.emitServer('client:failDelivery');
         }
     }
