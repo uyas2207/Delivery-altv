@@ -350,7 +350,7 @@ class DeliveryOrder {
         alt.log(`До проверки`);
         if (this.state === 'waiting_for_loading' ) {
             if (colshape === this.loadingPoint.pointVisuals.colshape){
-                 alt.log(`Проверка работает`);
+                alt.log(`Проверка работает`);
                 this.loadingPoint.PointLoad(colshape, alt.Player.local.vehicle);
             }
         } 
@@ -370,11 +370,11 @@ class DeliveryOrder {
 
     handleColshapeLeave(colshape) {
     // Очищаем обработчики клавиш при выходе из колшейпа
-        if (this.loadingPoint) {
-            this.loadingPoint.cleanup();
+        if (this.state === 'waiting_for_loading' && this.loadingPoint) {
+                this.loadingPoint.cleanup();
         }
-        if (this.unloadingPoint) {
-            this.unloadingPoint.cleanup();
+        if (this.state === 'delivering' && this.unloadingPoint) {
+                this.unloadingPoint.cleanup();
         }
     }
 
@@ -395,8 +395,9 @@ class DeliveryOrder {
     }
 
     async executeUnloading(vehicle) {
+        const vehicleBlocker = new VehicleBlocker();
         drawNotification('Начало разгрузки...', true);   //true значит что уведмоление пропадет через 3 чекунды
-        await this.vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
+        await vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
         drawNotification('Авто разгружено...', true);
 
         this.loadedVehId = null;
