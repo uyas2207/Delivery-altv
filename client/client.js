@@ -153,20 +153,20 @@ class DeliveryJobClient {
 
         init() { 
             alt.onServer('initLoadingPoints', (points) => {
-                this.loadingPoints = points;
+                this.config.loadingPoints = points;
             });
             
             alt.onServer('initUnloadingPoints', (points) => {
-                this.unloadingPoints = points;
+                this.config.unloadingPoints = points;
             });
             
             alt.onServer('initPoliceStations', (points) => {
-                this.policeStations = points;
+                this.config.policeStations = points;
                 this.createPoliceBlipsColshapes();
             });
             
             alt.onServer('initAllowedVehicles', (VehHash) => {
-                this.allowedVehicles = VehHash;
+                this.config.allowedVehicles = VehHash;
             });
             
             alt.onServer('client:startDelivery', (cargoType) => {
@@ -200,7 +200,7 @@ class DeliveryJobClient {
         }
 
         createPoliceBlipsColshapes() {
-                this.policeStations.forEach((station, index) => {
+                this.config.policeStations.forEach((station, index) => {
                     const item = this.createBlip(station, station.blipSprite, station.blipColor);
                     
                     const colshape = new alt.ColshapeSphere(station.x, station.y, station.z, 350);
@@ -210,7 +210,7 @@ class DeliveryJobClient {
             
                     this.policeColshapes.push(colshape);
                 });
-                alt.log(`Создано ${this.policeStations.length} полицейских участков`);
+                alt.log(`Создано ${this.config.policeStations.length} полицейских участков`);
             }
 
         createBlip(point, sprite, color) {
@@ -233,7 +233,7 @@ class DeliveryJobClient {
             this.currentOrder = new DeliveryOrder(
                 cargoType,
                 this.config,
-                this.vehicleBlocker,
+                this.policeColshapes
             );
             this.currentOrder.deliveryJobClient = this; // cсылка для последующего обнуления
             this.currentOrder.start();
@@ -271,10 +271,11 @@ class DeliveryJobClient {
 
 // Конкретный заказ на клиенте, создается только при старте доставки у конкретного игрока (не при входе на сервер)
 class DeliveryOrder {
-    constructor(cargoType, config, ) {
+    constructor(cargoType, config, policeColshapes) {
         //Данные из конфига
         this.cargoType = cargoType;
         this.config = config;
+        this.policeColshapes = policeColshapes;
         
         this.state = 'empty';
         this.loadingPoint = null;
@@ -346,9 +347,10 @@ class DeliveryOrder {
         
         // если в будущем будет добавлено больше колшейпов
         if (!this.loadingPoint || !this.unloadingPoint || !this.policeColshapes) return;
-
+        alt.log(`До проверки`);
         if (this.state === 'waiting_for_loading' ) {
             if (colshape === this.loadingPoint.pointVisuals.colshape){
+                 alt.log(`Проверка работает`);
                 this.loadingPoint.PointLoad(colshape, alt.Player.local.vehicle);
             }
         } 
@@ -377,8 +379,9 @@ class DeliveryOrder {
     }
 
     async executeLoading(vehicle) {
+        const vehicleBlocker = new VehicleBlocker();
         drawNotification('Начало погрузки...', true);   //true значит что уведмоление пропадет через 3 чекунды
-        await this.vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
+        await vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
 
         this.loadedVehId = vehicle.id;
 
@@ -443,8 +446,9 @@ class PointBase {
 
     // Метод PointLoad - инкапсулирует поведение точки погрузки
     PointLoad(colshape, entity) {
+        alt.log (`PointLoad`)
         const player = alt.Player.local;
-
+        
         // Проверка на разрешенные модели авто
         if (!this.deliveryJob.config.allowedVehicles.includes(player.vehicle.model)) {
             drawNotification('Транспорт не подходит для перевозки');
