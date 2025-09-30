@@ -33,8 +33,8 @@ class CargoBase {
         alt.emitClient(player, 'drawNotification', `+${this.reward}\\$`);
     }
 
-    onDeliveryFailed(player, reason) {
-        alt.emitClient(player, 'drawNotification', `Доставка провалена: ${reason}`);
+    onDeliveryFailed(player) {
+        alt.emitClient(player, 'drawNotification', `Доставка провалена:`);
     }
 }
 
@@ -61,7 +61,7 @@ class HardCargo extends CargoBase {
         return true;
     }
 
-    onDeliveryFailed(player, reason) {
+    onDeliveryFailed(player) {
         //alt.emitClient(player, 'drawNotification', `Опасный груз детонировал! Причина: ${reason}`);
         alt.emitClient(attacker, 'drawNotification', 'Вы уничтожили груз');
         alt.emitClient(player, 'drawNotification','заказ отменен!');
@@ -83,7 +83,7 @@ class DangerCargo extends CargoBase {
         return true;
     }
 
-    onDeliveryFailed(player, reason) {
+    onDeliveryFailed(player) {
         alt.emitClient(player, 'drawNotification', `'Вы взорвали груз`);
         alt.emitClient(player, 'drawNotification','заказ отменен!');
     }
@@ -101,7 +101,7 @@ class IllegalCargo extends CargoBase {
         return true;
     }
     */
-    onDeliveryFailed(player, reason) {
+    onDeliveryFailed(player) {
         alt.emitClient(player, 'drawNotification', 'Вы находились слишком близко к полицейскому участку'); 
         alt.emitClient(player, 'drawNotification','заказ отменен!');
     }
@@ -153,12 +153,13 @@ class ConfigManager {
 
 // Конкретный личный заказ доставки
 class DeliveryJob {
-    constructor(player, cargoTypes) {
+    constructor(player, configManager) {
         this.player = player;
-        this.cargoTypes = cargoTypes;
+        this.configManager = configManager;
     //    this.configManager = configManager;
         this.cargo = null;                                                          // текущий тип заказа
         this.loadedVehId = null;
+        this.cargoTypes = this.configManager.getCargoTypes();  // Получаем типы грузов из configManager
     //    this.cargoTypes = [CommonCargo, HardCargo, DangerCargo, IllegalCargo];      //все типы заказа CommonCargo, HardCargo, DangerCargo, IllegalCargo
         this.state = 'empty';                 // empty, loading, delivering, completed, cancelled
     }
@@ -190,10 +191,10 @@ class DeliveryJob {
         alt.log(`Delivery cancelled for ${this.player.id}`);
     }
 
-    fail(reason) {
+    fail() {
         this.state = 'failed';
-        this.cargo.onDeliveryFailed(this.player, reason);
-        alt.log(`Delivery failed for ${this.player.id}: ${reason}`);
+        this.cargo.onDeliveryFailed(this.player);
+        alt.log(`Delivery failed for ${this.player.id}`);
         /*
         if (this.state === 'delivering' && this.cargo instanceof IllegalCargo) {
             // Вызываем метод конкретного типа груза для обработки провала
@@ -261,6 +262,10 @@ class DeliveryJobSystem {
         chat.registerCmd("randomload", (player) => {
             this.startNewOrder(player);
         });
+
+        chat.registerCmd("cancelorder", (player) => {
+            this.cancelOrder(player);
+        });
     }
 
     startLoading(player, loadedVehId) {
@@ -285,7 +290,7 @@ class DeliveryJobSystem {
             order.fail(); // Делегируем логику провала конкретному заказу
         }
     }
-/*
+
     //Для работы команды cancelorder
     cancelOrder(player) {
         const order = this.activeOrders.get(player.id);
@@ -294,10 +299,10 @@ class DeliveryJobSystem {
             this.activeOrders.delete(player.id);
         }
     }
-*/
+
     startNewOrder(player) {
         // Отменяем текущий заказ если есть
-        
+
         if (this.activeOrders.has(player.id)) {
             this.cancelOrder(player);
         }
@@ -307,8 +312,12 @@ class DeliveryJobSystem {
         order.start();
         
         alt.log("Случайная точка погрузки выбрана");
+
+        
     }    
 
+
+    
     handleVehicleDamage(vehicle, attacker) {
         if (!vehicle?.valid || !(attacker instanceof alt.Player) || !attacker.valid) return;
 

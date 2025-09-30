@@ -85,13 +85,60 @@ class VehicleBlocker {
     }
 }
 
+// Класс для создания и уничтожения визуальных элементов точки
+class PointVisuals {
+    constructor(pointConfig) {
+        this.pointConfig = pointConfig;
+        this.position = new alt.Vector3(pointConfig.x, pointConfig.y, pointConfig.z);
+
+        this.marker = null;
+        this.blip = null;
+        this.colshape = null;
+    }
+
+    create() {
+    // Создание маркера
+    this.marker = new alt.Marker(
+        this.pointConfig.markerType, // значение по умолчанию
+        this.position, // используем уже созданный position
+        new alt.RGBA(this.pointConfig.markerColor[0], this.pointConfig.markerColor[1], this.pointConfig.markerColor[2], this.pointConfig.markerColor[3]) //полученные из конфига значения цвета
+    );
+
+    // Создание блипа
+    this.blip = new alt.PointBlip(this.position.x, this.position.y, this.position.z);
+    this.blip.sprite = this.pointConfig.blipSprite;
+    this.blip.color = this.pointConfig.blipColor;
+    this.blip.name = this.pointConfig.name;
+    this.blip.shortRange = this.pointConfig.blipShortRange;
+
+    // Создание колшейпа
+    this.colshape = new alt.ColshapeSphere(
+        this.position.x, 
+        this.position.y, 
+        this.position.z, 
+        this.pointConfig.colshapeRadius
+    );
+
+        return this;
+    }
+
+    destroy() {
+        if (this.marker) this.marker.destroy();
+        if (this.blip) this.blip.destroy();
+        if (this.colshape) this.colshape.destroy();
+    }
+}
+
 // Общая система управления доставкой создается при подключении игрока
 class DeliveryJobClient {
-    constructor() {
-        this.unloadingPoints = [];
-        this.loadingPoints = [];
-        this.allowedVehicles = [];
-        this.policeStations = [];
+    constructor() {        
+        //данные полученные из конфига
+        this.config = {
+            unloadingPoints: [],
+            loadingPoints: [],
+            allowedVehicles: [],
+            policeStations: []
+        };
 
         this.loadingMarkerType = null;
         this.unloadingMarkerType = null;
@@ -107,7 +154,6 @@ class DeliveryJobClient {
         init() { 
             alt.onServer('initLoadingPoints', (points) => {
                 this.loadingPoints = points;
-              //  this.selectRandomLoadingPoint();
             });
             
             alt.onServer('initUnloadingPoints', (points) => {
@@ -116,8 +162,7 @@ class DeliveryJobClient {
             
             alt.onServer('initPoliceStations', (points) => {
                 this.policeStations = points;
-                this.createPoliceBlips();
-            //    this.cargoBase.createPoliceColshapes(this.policeStations);
+                this.createPoliceBlipsColshapes();
             });
             
             alt.onServer('initAllowedVehicles', (VehHash) => {
@@ -154,7 +199,7 @@ class DeliveryJobClient {
 
         }
 
-        createPoliceBlips() {
+        createPoliceBlipsColshapes() {
                 this.policeStations.forEach((station, index) => {
                     const item = this.createBlip(station, station.blipSprite, station.blipColor);
                     
@@ -186,15 +231,8 @@ class DeliveryJobClient {
             }
             // инициализируется класс конкретного заказа только при старте конкретного заказа
             this.currentOrder = new DeliveryOrder(
-                //передаются все необходимые переменные для конкретного заказа
                 cargoType,
-                this.unloadingPoints,
-                this.loadingPoints,
-                this.allowedVehicles,
-                this.policeStations,
-                this.policeColshapes,
-                
-                this.notificationSystem,
+                this.config,
                 this.vehicleBlocker,
             );
             this.currentOrder.deliveryJobClient = this; // cсылка для последующего обнуления
@@ -224,6 +262,7 @@ class DeliveryJobClient {
     handleLeaveColshapeDeliveryJobClient(colshape, entity) {
             if (notificationManager.isWebViewOpen !== false){
                 notificationManager.hidePersistent();
+                //очищает обработчик нажатия клавиши (который создается только при открытии WebViewOpen, поэтому в других случаях его можно не очищать)
                 this.currentOrder.handleColshapeLeave(colshape, entity);
         }
     }     
@@ -232,16 +271,10 @@ class DeliveryJobClient {
 
 // Конкретный заказ на клиенте, создается только при старте доставки у конкретного игрока (не при входе на сервер)
 class DeliveryOrder {
-    constructor(cargoType, unloadingPoints, loadingPoints, allowedVehicles, policeStations, policeColshapes, notificationSystem, vehicleBlocker) {
+    constructor(cargoType, config, ) {
         //Данные из конфига
         this.cargoType = cargoType;
-        this.unloadingPoints = unloadingPoints;
-        this.loadingPoints = loadingPoints;
-        this.allowedVehicles = allowedVehicles;
-        this.policeStations = policeStations;
-        this.policeColshapes = policeColshapes;
-        this.notificationSystem = notificationSystem;
-        this.vehicleBlocker = vehicleBlocker;
+        this.config = config;
         
         this.state = 'empty';
         this.loadingPoint = null;
@@ -253,15 +286,14 @@ class DeliveryOrder {
     async start() {
         await this.selectPoints();
         this.createLoadingPoint();
-        this.state = 'waiting_for_loading';
-        
+        this.state = 'waiting_for_loading';   
     }
 
     selectPoints() {
         return new Promise((resolve) => {
             // Выбор случайных точек            
-            this.loadingPoint = this.loadingPoints[Math.floor(Math.random() * this.loadingPoints.length)];
-            this.unloadingPoint = this.unloadingPoints[Math.floor(Math.random() * this.unloadingPoints.length)];
+            this.loadingPoint = this.config.loadingPoints[Math.floor(Math.random() * this.config.loadingPoints.length)];
+            this.unloadingPoint = this.config.unloadingPoints[Math.floor(Math.random() * this.config.unloadingPoints.length)];
             
             
             // Проверка для нелегального 
@@ -278,7 +310,7 @@ class DeliveryOrder {
         // Преобразуем unloadingPoint в Vector3 для расчета расстояния
         const unloadingPos = new alt.Vector3(this.unloadingPoint.x, this.unloadingPoint.y, this.unloadingPoint.z);
         
-        let isTooClose = this.policeStations.some(station => {
+        let isTooClose = this.config.policeStations.some(station => {
             const stationPos = new alt.Vector3(station.x, station.y, station.z);
              const distance = unloadingPos.distanceTo(stationPos);
             alt.log(`Расстояние до полицейского участка ${station.name}: ${distance}`);
@@ -288,7 +320,7 @@ class DeliveryOrder {
         if (isTooClose === true) {
             // Перевыбираем точку разгрузки, не меняя точки погрузки
             alt.log(`Точка разгрузки слишком близко к полиции, выбираем новую...`);
-            this.unloadingPoint = this.unloadingPoints[Math.floor(Math.random() * this.unloadingPoints.length)];
+            this.unloadingPoint = this.config.unloadingPoints[Math.floor(Math.random() * this.config.unloadingPoints.length)];
             this.distanceFromPoliceStations(); // Рекурсивная проверка
         }
     }
@@ -312,13 +344,13 @@ class DeliveryOrder {
     handleColshapeEnterDeliveryOrder(colshape) {
         alt.log(`alt.Player.local.vehicle.id: ${alt.Player.local.vehicle.id}`)
         
-       // alt.log(`this.unloadingPoint: ${this.unloadingPoint}`)
-         //alt.log(`this.loadingPoint: ${this.loadingPoint}`)
         // если в будущем будет добавлено больше колшейпов
         if (!this.loadingPoint || !this.unloadingPoint || !this.policeColshapes) return;
 
-        if (colshape === this.loadingPoint.pointVisuals.colshape && this.state === 'waiting_for_loading') {
-            this.loadingPoint.PointLoad(colshape, alt.Player.local.vehicle);
+        if (this.state === 'waiting_for_loading' ) {
+            if (colshape === this.loadingPoint.pointVisuals.colshape){
+                this.loadingPoint.PointLoad(colshape, alt.Player.local.vehicle);
+            }
         } 
         if (this.state === 'delivering') {
             if (colshape === this.unloadingPoint.pointVisuals.colshape){
@@ -326,11 +358,12 @@ class DeliveryOrder {
            }
         }
         
-        if((this.cargoType === 'Illegal') && (alt.Player.local.vehicle.id === this.loadedVehId) && (colshape.isPoliceZone === true)){
-            alt.log(`после проверки на illegal и loadedvehid`)
-        alt.emitServer('client:failDelivery');
+        if(colshape.isPoliceZone === true){
+            if ((this.cargoType === 'Illegal') && (alt.Player.local.vehicle.id === this.loadedVehId)){
+                alt.log(`после проверки на illegal и loadedvehid`)
+                alt.emitServer('client:failDelivery');
+            }
         }
-        
     }
 
     handleColshapeLeave(colshape) {
@@ -399,50 +432,6 @@ class DeliveryOrder {
 
 }
 
-// Класс для создания и уничтожения визуальных элементов точки
-class PointVisuals {
-    constructor(pointConfig) {
-        this.pointConfig = pointConfig;
-        this.position = new alt.Vector3(pointConfig.x, pointConfig.y, pointConfig.z);
-
-        this.marker = null;
-        this.blip = null;
-        this.colshape = null;
-    }
-
-    create() {
-    // Создание маркера
-    this.marker = new alt.Marker(
-        this.pointConfig.markerType, // значение по умолчанию
-        this.position, // используем уже созданный position
-        new alt.RGBA(this.pointConfig.markerColor[0], this.pointConfig.markerColor[1], this.pointConfig.markerColor[2], this.pointConfig.markerColor[3]) //полученные из конфига значения цвета
-    );
-
-    // Создание блипа
-    this.blip = new alt.PointBlip(this.position.x, this.position.y, this.position.z);
-    this.blip.sprite = this.pointConfig.blipSprite;
-    this.blip.color = this.pointConfig.blipColor;
-    this.blip.name = this.pointConfig.name;
-    this.blip.shortRange = this.pointConfig.blipShortRange;
-
-    // Создание колшейпа
-    this.colshape = new alt.ColshapeSphere(
-        this.position.x, 
-        this.position.y, 
-        this.position.z, 
-        this.pointConfig.colshapeRadius
-    );
-
-        return this;
-    }
-
-    destroy() {
-        if (this.marker) this.marker.destroy();
-        if (this.blip) this.blip.destroy();
-        if (this.colshape) this.colshape.destroy();
-    }
-}
-
 // Класс точки с логикой для точки погрузки/разгрузки
 class PointBase {
     constructor(type, deliveryJob, pointVisuals) {
@@ -457,7 +446,7 @@ class PointBase {
         const player = alt.Player.local;
 
         // Проверка на разрешенные модели авто
-        if (!this.deliveryJob.allowedVehicles.includes(player.vehicle.model)) {
+        if (!this.deliveryJob.config.allowedVehicles.includes(player.vehicle.model)) {
             drawNotification('Транспорт не подходит для перевозки');
             return;
         }
@@ -481,7 +470,7 @@ class PointBase {
                         drawNotification('Вы не находитесь в транспорте');
                         return;
                 }
-                if (!this.deliveryJob.allowedVehicles.includes(player.vehicle.model)) { // снова проверка на правильное авто (вдруг игрок заехал в колшейп на правильном авто и невыходя из колшейпа пересел в неправильное авто)
+                if (!this.deliveryJob.config.allowedVehicles.includes(player.vehicle.model)) { // снова проверка на правильное авто (вдруг игрок заехал в колшейп на правильном авто и невыходя из колшейпа пересел в неправильное авто)
                     alt.log(`Vehicle ${player.vehicle.model} is not allowed`);
                     drawNotification('Неправильное авто');
                     return;
