@@ -243,7 +243,7 @@ class DeliveryOrder {
         this.notificationSystem = notificationSystem;
         this.vehicleBlocker = vehicleBlocker;
         
-        
+        this.state = 'empty';
         this.loadingPoint = null;
         this.unloadingPoint = null;
         this.loadedVehId = null;
@@ -326,7 +326,7 @@ class DeliveryOrder {
            }
         }
         
-        if((this.state === 'delivering') && (this.cargoType === 'Illegal') && (alt.Player.local.vehicle.id === this.loadedVehId)){
+        if((this.cargoType === 'Illegal') && (alt.Player.local.vehicle.id === this.loadedVehId) && (colshape.isPoliceZone === true)){
             alt.log(`после проверки на illegal и loadedvehid`)
         alt.emitServer('client:failDelivery');
         }
@@ -346,7 +346,6 @@ class DeliveryOrder {
     async executeLoading(vehicle) {
         drawNotification('Начало погрузки...', true);   //true значит что уведмоление пропадет через 3 чекунды
         await this.vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
-        drawNotification('Авто загружено...', true);
 
         this.loadedVehId = vehicle.id;
 
@@ -354,6 +353,7 @@ class DeliveryOrder {
         this.createUnloadingPoint();
         this.state = 'delivering';
         
+        drawNotification(`Погрузка завершена! Груз: ${this.cargoType}`);
         alt.emitServer('client:startLoading', this.loadedVehId);
 
     }
@@ -371,13 +371,12 @@ class DeliveryOrder {
         alt.emitServer('client:completeDelivery');
         drawNotification(`Доставка завершена! Груз: ${this.cargoType}`);
 
-            this.deliveryJobClient.currentOrder = null;
+        this.deliveryJobClient.currentOrder = null;
 
     }
 
      cancel() {
         // ПОЛНАЯ ОЧИСТКА РЕСУРСОВ
-        alt.log(`this.state ДО ${this.state}`);
         if (this.state === 'waiting_for_loading') {
             alt.log(`ПОЛНАЯ ОЧИСТКА РЕСУРСОВ loadingPoint до`);
             this.loadingPoint.cleanup();
@@ -392,7 +391,6 @@ class DeliveryOrder {
             this.state = 'empty';
         }
         
-        alt.log(`this.state ПОСЛЕ ${this.state}`);
         // ОБНУЛЕНИЕ В РОДИТЕЛЕ
         if (this.deliveryJobClient) {
             this.deliveryJobClient.currentOrder = null;
@@ -466,6 +464,7 @@ class PointBase {
 
         notificationManager.showPersistent("Погрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать погрузку");
         
+        //таких ситуаций в текущем коде быть не может, проверка есть на случай если потом будут добавлены еще обработчки при расширении функционала доставки
         if (this.keyPressHandler) {
             alt.off('keydown', this.keyPressHandler);
             alt.log('Удален обработчик 1')

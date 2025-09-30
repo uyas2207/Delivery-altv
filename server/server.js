@@ -50,7 +50,8 @@ class HardCargo extends CargoBase {
         alt.log(`HardCargo авто получило урон после проверок`);
             alt.setTimeout(() => {
                 vehicle.destroy();
-                alt.emitClient(attacker, 'drawNotification', 'Вы уничтожили груз, заказ отменен!');
+                alt.emitClient(attacker, 'drawNotification', 'Вы уничтожили груз');
+                alt.emitClient(player, 'drawNotification','заказ отменен!');
                 deliveryJob.cancel(attacker);
             }, 500);
         }
@@ -70,7 +71,8 @@ class DangerCargo extends CargoBase {
             if (vehicle.valid) {
                 vehicle.destroy();
             }
-            alt.emitClient(attacker, 'drawNotification', 'Вы уничтожили груз, заказ отменен!');
+            alt.emitClient(attacker, 'drawNotification', 'Вы взорвали груз');
+            alt.emitClient(player, 'drawNotification','заказ отменен!');
             deliveryJob.cancel(attacker);
         }, 500);
         return true;
@@ -83,7 +85,8 @@ class IllegalCargo extends CargoBase {
     }
 
     onPoliceZoneEnter(player, deliveryJob) {
-        alt.emitClient(player, 'drawNotification', 'Вы находились слишком близко к полицейскому участку, заказ отменен!');
+        alt.emitClient(player, 'drawNotification', 'Вы находились слишком близко к полицейскому участку'); 
+        alt.emitClient(player, 'drawNotification','заказ отменен!');
         deliveryJob.cancel(player);
         return true;
     }
@@ -166,8 +169,6 @@ class DeliveryJobSystem {
 
         alt.on('vehicleDamage', (vehicle, attacker) => {
           //  alt.log(`авто получило урон до проверок`);
-            //захардкоженная проверка на Hard и Danger поменять в случае добавления логики на получение урона у новых типов груза
-         //   if (!['Hard', 'Danger'].includes(this.loadtype)) return;    //если машина получила урон, но она не загружена hard или danger ничего не делать
             if (!vehicle || !vehicle.valid) return;  
             if (!(attacker instanceof alt.Player) || !attacker.valid) return;
             alt.log(`Просто получение урона, авто получило урон после проверок`);
@@ -191,9 +192,7 @@ class DeliveryJobSystem {
         if (order) {
             order.complete();
             
-            alt.log(`this.activeOrders(player.id) До: ${this.activeOrders(player.id)}`);
             this.activeOrders.delete(player.id);
-            alt.log(`this.activeOrders(player.id): ${this.activeOrders(player.id)}`);
         }
     }
 
@@ -215,11 +214,11 @@ class DeliveryJobSystem {
 */
     startNewOrder(player) {
         // Отменяем текущий заказ если есть
-        /*
+        
         if (this.activeOrders.has(player.id)) {
             this.cancelOrder(player);
         }
-*/
+
         const order = new DeliveryJob(player, this.configManager);
         this.activeOrders.set(player.id, order);
         order.start();
@@ -244,7 +243,7 @@ class DeliveryJob {
         this.configManager = configManager;
         this.cargo = null;                                                          // текущий тип заказа
         this.loadedVehId = null;
-        this.cargoTypes = [IllegalCargo];      //все типы заказа CommonCargo, HardCargo, DangerCargo, IllegalCargo
+        this.cargoTypes = [CommonCargo, HardCargo, DangerCargo, IllegalCargo];      //все типы заказа CommonCargo, HardCargo, DangerCargo, IllegalCargo
         this.state = 'empty';                 // empty, loading, delivering, completed, cancelled
     }
 
@@ -261,7 +260,7 @@ class DeliveryJob {
     }
 
     complete() {
-        this.state = 'completed';
+        this.state = 'empty';
         this.cargo.onSuccessfulDelivery(this.player);
     }
 
