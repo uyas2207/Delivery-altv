@@ -15,6 +15,7 @@ chat.registerCmd("randomload", (player) => {
 });
 */
 
+//Добавить первой стрской onDeliveryFailed Вывод уникальной ${reason}, вторая строчка у всех одинаковая 'заказ отменен!'
 class CargoBase {
     constructor(type, reward) {
         this.type = type;
@@ -30,6 +31,10 @@ class CargoBase {
 
     onSuccessfulDelivery(player) {
         alt.emitClient(player, 'drawNotification', `+${this.reward}\\$`);
+    }
+
+    onDeliveryFailed(player, reason) {
+        alt.emitClient(player, 'drawNotification', `Доставка провалена: ${reason}`);
     }
 }
 
@@ -50,12 +55,16 @@ class HardCargo extends CargoBase {
         alt.log(`HardCargo авто получило урон после проверок`);
             alt.setTimeout(() => {
                 vehicle.destroy();
-                alt.emitClient(attacker, 'drawNotification', 'Вы уничтожили груз');
-                alt.emitClient(player, 'drawNotification','заказ отменен!');
                 deliveryJob.cancel(attacker);
             }, 500);
         }
         return true;
+    }
+
+    onDeliveryFailed(player, reason) {
+        //alt.emitClient(player, 'drawNotification', `Опасный груз детонировал! Причина: ${reason}`);
+        alt.emitClient(attacker, 'drawNotification', 'Вы уничтожили груз');
+        alt.emitClient(player, 'drawNotification','заказ отменен!');
     }
 }
 
@@ -68,14 +77,15 @@ class DangerCargo extends CargoBase {
         alt.log(`DangerCargo авто получило урон после проверок`);
         alt.emitClient(attacker, 'explode');
         alt.setTimeout(() => {
-            if (vehicle.valid) {
-                vehicle.destroy();
-            }
-            alt.emitClient(attacker, 'drawNotification', 'Вы взорвали груз');
-            alt.emitClient(player, 'drawNotification','заказ отменен!');
+            if (vehicle.valid) vehicle.destroy();
             deliveryJob.cancel(attacker);
         }, 500);
         return true;
+    }
+
+    onDeliveryFailed(player, reason) {
+        alt.emitClient(player, 'drawNotification', `'Вы взорвали груз`);
+        alt.emitClient(player, 'drawNotification','заказ отменен!');
     }
 }
 
@@ -83,13 +93,19 @@ class IllegalCargo extends CargoBase {
     constructor() {
         super('Illegal', 1500);
     }
-
+/*
     onPoliceZoneEnter(player, deliveryJob) {
         alt.emitClient(player, 'drawNotification', 'Вы находились слишком близко к полицейскому участку'); 
         alt.emitClient(player, 'drawNotification','заказ отменен!');
         deliveryJob.cancel(player);
         return true;
     }
+    */
+    onDeliveryFailed(player, reason) {
+        alt.emitClient(player, 'drawNotification', 'Вы находились слишком близко к полицейскому участку'); 
+        alt.emitClient(player, 'drawNotification','заказ отменен!');
+    }
+
 }
 
 //для работы с данными из конфига
@@ -99,6 +115,7 @@ class ConfigManager {
         this.unloadingPoints = [];
         this.policeStations = [];
         this.allowedVehicles = [];
+        this.cargoTypes = [CommonCargo, HardCargo, DangerCargo, IllegalCargo];
     }
 //получение данных из конфига
     loadConfig() {
@@ -110,36 +127,108 @@ class ConfigManager {
             this.unloadingPoints = fullConfig.points?.unloading || [];
             this.policeStations = fullConfig.policeStations || [];
             this.allowedVehicles = fullConfig.transport?.allowedVehicles || [];
+
+            alt.log(`Config loaded: ${this.loadingPoints.length} loading, ${this.unloadingPoints.length} unloading points`);
+    }
+
+    getCargoTypes() {
+        return this.cargoTypes;
     }
 //оптравляет данные из конфига на клиент
-    getLoadingPoints(player) {
-        if (this.loadingPoints.length > 0) {
-        alt.emitClient(player, 'initLoadingPoints', this.loadingPoints);
-        }
-    }
-//оптравляет данные из конфига на клиент
-    getUnloadingPoints(player) {
-        if (this.unloadingPoints.length > 0) {
-        alt.emitClient(player, 'initUnloadingPoints', this.unloadingPoints);
-        }
-    }
-//оптравляет данные из конфига на клиент
-    getPoliceStations(player) {
-        if (this.policeStations.length > 0) {
-        alt.emitClient(player, 'initPoliceStations', this.policeStations);
-        }
-    }
-//оптравляет данные из конфига на клиент
-    getAllowedVehicles(player) {
-        if (this.allowedVehicles.length > 0) {
-        alt.emitClient(player, 'initAllowedVehicles', this.allowedVehicles);
-        }
+    sendConfigToPlayer(player) {
+            if (this.loadingPoints.length > 0) {
+                alt.emitClient(player, 'initLoadingPoints', this.loadingPoints);
+            }
+            if (this.unloadingPoints.length > 0) {
+                alt.emitClient(player, 'initUnloadingPoints', this.unloadingPoints);
+            }
+            if (this.policeStations.length > 0) {
+                alt.emitClient(player, 'initPoliceStations', this.policeStations);
+            }
+            if (this.allowedVehicles.length > 0) {
+                alt.emitClient(player, 'initAllowedVehicles', this.allowedVehicles);
+            }
     }
 }
+
+// Конкретный личный заказ доставки
+class DeliveryJob {
+    constructor(player, cargoTypes) {
+        this.player = player;
+        this.cargoTypes = cargoTypes;
+    //    this.configManager = configManager;
+        this.cargo = null;                                                          // текущий тип заказа
+        this.loadedVehId = null;
+    //    this.cargoTypes = [CommonCargo, HardCargo, DangerCargo, IllegalCargo];      //все типы заказа CommonCargo, HardCargo, DangerCargo, IllegalCargo
+        this.state = 'empty';                 // empty, loading, delivering, completed, cancelled
+    }
+
+    start() {
+            const CargoClass = this.cargoTypes[Math.floor(Math.random() * this.cargoTypes.length)];
+            this.cargo = new CargoClass();
+            this.state = 'active';
+
+            alt.log(`Выбран тип груза: ${this.cargo.type}`);
+            alt.emitClient(this.player, 'client:startDelivery', this.cargo.type);
+        }
+
+    startLoading(loadedVehId) {
+        this.loadedVehId = loadedVehId;
+        this.state = 'delivering';
+        alt.log(`Loading started for vehicle: ${loadedVehId}`);
+    }
+
+    complete() {
+        this.state = 'completed';
+        this.cargo.onSuccessfulDelivery(this.player);
+        alt.log(`Delivery completed for ${this.player.id}`);
+    }
+
+    cancel() {
+        this.state = 'cancelled';
+        alt.emitClient(this.player, 'client:cancelDelivery');
+        alt.log(`Delivery cancelled for ${this.player.id}`);
+    }
+
+    fail(reason) {
+        this.state = 'failed';
+        this.cargo.onDeliveryFailed(this.player, reason);
+        alt.log(`Delivery failed for ${this.player.id}: ${reason}`);
+        /*
+        if (this.state === 'delivering' && this.cargo instanceof IllegalCargo) {
+            // Вызываем метод конкретного типа груза для обработки провала
+            this.cargo.onPoliceZoneEnter(this.player, this);
+        } else {
+            alt.log(`Попытка провала доставки в неправильном состоянии или для неправильного груза`);
+        }
+            */
+    }
+
+    handleDamage(vehicle, attacker) {
+        if (this.state === 'delivering') {
+            this.cargo.onDamage(vehicle, attacker, this);
+        }
+    }
+
+}
+
+class DeliveryJobFactory {
+    constructor(configManager) {
+        this.configManager = configManager;
+    }
+
+    createDeliveryJob(player) {
+        const cargoTypes = this.configManager.getCargoTypes();
+        return new DeliveryJob(player, cargoTypes);
+    }
+}
+
+
 //общий, основной класс системы доставки
 class DeliveryJobSystem {
     constructor() {  
         this.configManager = new ConfigManager();
+        this.jobFactory = new DeliveryJobFactory(this.configManager);
         this.activeOrders = new Map();
         this.init();
     }
@@ -148,10 +237,7 @@ class DeliveryJobSystem {
         this.configManager.loadConfig();
 
         alt.on('playerConnect', (player) => {
-                    this.configManager.getLoadingPoints(player);
-                    this.configManager.getUnloadingPoints(player);
-                    this.configManager.getPoliceStations(player);
-                    this.configManager.getAllowedVehicles(player);
+            this.configManager.sendConfigToPlayer(player);
         });
 
         alt.onClient('client:startLoading', (player, loadedVehId) => {
@@ -168,9 +254,6 @@ class DeliveryJobSystem {
         });
 
         alt.on('vehicleDamage', (vehicle, attacker) => {
-          //  alt.log(`авто получило урон до проверок`);
-            if (!vehicle || !vehicle.valid) return;  
-            if (!(attacker instanceof alt.Player) || !attacker.valid) return;
             alt.log(`Просто получение урона, авто получило урон после проверок`);
             this.handleVehicleDamage(vehicle, attacker);
         });
@@ -227,6 +310,8 @@ class DeliveryJobSystem {
     }    
 
     handleVehicleDamage(vehicle, attacker) {
+        if (!vehicle?.valid || !(attacker instanceof alt.Player) || !attacker.valid) return;
+
         const order = this.activeOrders.get(attacker.id);
         if (order && order.loadedVehId === vehicle.id) {
             alt.log(`авто получило урон после проверок на активный заказ`);
@@ -236,56 +321,6 @@ class DeliveryJobSystem {
     }
 
 }
-// Конкретный личный заказ доставки
-class DeliveryJob {
-    constructor(player, configManager) {
-        this.player = player;
-        this.configManager = configManager;
-        this.cargo = null;                                                          // текущий тип заказа
-        this.loadedVehId = null;
-        this.cargoTypes = [CommonCargo, HardCargo, DangerCargo, IllegalCargo];      //все типы заказа CommonCargo, HardCargo, DangerCargo, IllegalCargo
-        this.state = 'empty';                 // empty, loading, delivering, completed, cancelled
-    }
-
-    start() {
-            const CargoClass = this.cargoTypes[Math.floor(Math.random() * this.cargoTypes.length)];
-            this.cargo = new CargoClass();
-            alt.log(`Выбран тип груза: ${this.cargo.type}`);
-            alt.emitClient(this.player, 'client:startDelivery', this.cargo.type);
-        }
-
-    Loaded(loadedVehId) {
-        this.loadedVehId = loadedVehId;
-        this.state = 'delivering';
-    }
-
-    complete() {
-        this.state = 'empty';
-        this.cargo.onSuccessfulDelivery(this.player);
-    }
-
-    cancel() {
-        this.state = 'empty';
-        alt.emitClient(this.player, 'client:cancelDelivery');
-    }
-
-    fail() {
-        if (this.state === 'delivering' && this.cargo instanceof IllegalCargo) {
-            // Вызываем метод конкретного типа груза для обработки провала
-            this.cargo.onPoliceZoneEnter(this.player, this);
-        } else {
-            alt.log(`Попытка провала доставки в неправильном состоянии или для неправильного груза`);
-        }
-    }
-
-    handleDamage(vehicle, attacker) {
-        if (this.state === 'delivering') {
-            this.cargo.onDamage(vehicle, attacker, this);
-        }
-    }
-
-}
-
 //new DeliveryJob();
 new DeliveryJobSystem();
 
