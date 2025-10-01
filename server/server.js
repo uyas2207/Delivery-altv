@@ -7,19 +7,13 @@ import * as fs from 'fs';
 //для работы с путями файлов
 import * as path from 'path';
 
-/*
-chat.registerCmd("randomload", (player) => {
-        // Отправляем команду на клиент для старта новой погрузки (удаляя текущий заказ)
-        alt.emitClient(player, 'client:startDelivery');
-        chat.send(player, "Случайная точка погрузки выбрана");
-});
-*/
 
 //Добавить первой стрской onDeliveryFailed Вывод уникальной ${reason}, вторая строчка у всех одинаковая 'заказ отменен!'
 class CargoBase {
-    constructor(type, reward) {
+    constructor(type, reward, reason) {
         this.type = type;
         this.reward = reward;
+        this.reason = reason;
     }
 
     async onDamage(vehicle, attacker, deliveryJob) {
@@ -34,20 +28,21 @@ class CargoBase {
     }
 
     onDeliveryFailed(player) {
-        alt.emitClient(player, 'drawNotification', `Доставка провалена:`);
+        alt.emitClient(player, 'drawNotification',`${this.reason}`);
+        alt.emitClient(player, 'drawNotification','заказ отменен!');
     }
 }
 
 // Конкретные типы грузов
 class CommonCargo extends CargoBase {
     constructor() {
-        super('Common', 1000);
+        super('Common', 1000, null);
     }
 }
 
 class HardCargo extends CargoBase {
     constructor() {
-        super('Hard', 2000);
+        super('Hard', 2000, 'Вы уничтожили груз');
         this.destroyInProgress = false;
     }
 
@@ -81,16 +76,11 @@ class HardCargo extends CargoBase {
         return true;
         */
 
-    onDeliveryFailed(player) {
-        //alt.emitClient(player, 'drawNotification', `Опасный груз детонировал! Причина: ${reason}`);
-        alt.emitClient(player, 'drawNotification', 'Вы уничтожили груз');
-        alt.emitClient(player, 'drawNotification','заказ отменен!');
-    }
 }
 
 class DangerCargo extends CargoBase {
     constructor() {
-        super('Danger', 3000);
+        super('Danger', 3000, 'Вы взорвали груз');
         this.destroyInProgress = false;
     }
 
@@ -123,17 +113,12 @@ class DangerCargo extends CargoBase {
         }, 500);
         return true;
         */
-    
 
-    onDeliveryFailed(player) {
-        alt.emitClient(player, 'drawNotification', `'Вы взорвали груз`);
-        alt.emitClient(player, 'drawNotification','заказ отменен!');
-    }
 }
 
 class IllegalCargo extends CargoBase {
     constructor() {
-        super('Illegal', 1500);
+        super('Illegal', 1500, 'Вы находились слишком близко к полицейскому участку');
     }
 /*
     onPoliceZoneEnter(player, deliveryJob) {
@@ -143,11 +128,6 @@ class IllegalCargo extends CargoBase {
         return true;
     }
     */
-    onDeliveryFailed(player) {
-        alt.emitClient(player, 'drawNotification', 'Вы находились слишком близко к полицейскому участку'); 
-        alt.emitClient(player, 'drawNotification','заказ отменен!');
-    }
-
 }
 
 //для работы с данными из конфига

@@ -97,29 +97,38 @@ class PointVisuals {
     }
 
     create() {
-    // Создание маркера
-    this.marker = new alt.Marker(
-        this.pointConfig.markerType, // значение по умолчанию
-        this.position, // используем уже созданный position
-        new alt.RGBA(this.pointConfig.markerColor[0], this.pointConfig.markerColor[1], this.pointConfig.markerColor[2], this.pointConfig.markerColor[3]) //полученные из конфига значения цвета
-    );
+        //Так как у colshapeRadius у полицейских учатсков не прописан в конфиге он undefined
+        if (this.pointConfig.colshapeRadius === undefined){
+            this.pointConfig.colshapeRadius = 350;
+        }
+        // Создание маркера
+        //у полицейских участков нет маркера в конфиге поэтому он undefined
+        if (this.pointConfig.markerType !== undefined) {
+            this.marker = new alt.Marker(this.pointConfig.markerType, this.position, new alt.RGBA(
+                this.pointConfig.markerColor[0], 
+                this.pointConfig.markerColor[1], 
+                this.pointConfig.markerColor[2], 
+                this.pointConfig.markerColor[3]
+                )
+            );
+        }
 
     // Создание блипа
     this.blip = new alt.PointBlip(this.position.x, this.position.y, this.position.z);
     this.blip.sprite = this.pointConfig.blipSprite;
     this.blip.color = this.pointConfig.blipColor;
     this.blip.name = this.pointConfig.name;
-    this.blip.shortRange = this.pointConfig.blipShortRange;
+    this.blip.shortRange = this.pointConfig.blipshortRange;
 
     // Создание колшейпа
     this.colshape = new alt.ColshapeSphere(
         this.position.x, 
         this.position.y, 
-        this.position.z, 
+        this.position.z,
         this.pointConfig.colshapeRadius
     );
 
-        return this;
+    return this;
     }
 
     destroy() {
@@ -151,47 +160,47 @@ class DeliveryJobClient {
         this.init();
     }
 
-        init() { 
-            alt.onServer('initLoadingPoints', (points) => {
-                this.config.loadingPoints = points;
-            });
+    init() { 
+        alt.onServer('initLoadingPoints', (points) => {
+            this.config.loadingPoints = points;
+        });
             
-            alt.onServer('initUnloadingPoints', (points) => {
-                this.config.unloadingPoints = points;
-            });
+        alt.onServer('initUnloadingPoints', (points) => {
+            this.config.unloadingPoints = points;
+        });
             
-            alt.onServer('initPoliceStations', (points) => {
-                this.config.policeStations = points;
-                this.createPoliceBlipsColshapes();
-            });
+        alt.onServer('initPoliceStations', (points) => {
+            this.config.policeStations = points;
+            this.createPoliceBlipsColshapes();
+        });
             
-            alt.onServer('initAllowedVehicles', (VehHash) => {
-                this.config.allowedVehicles = VehHash;
-            });
+        alt.onServer('initAllowedVehicles', (VehHash) => {
+            this.config.allowedVehicles = VehHash;
+        });
             
-            alt.onServer('client:startDelivery', (cargoType) => {
-                this.startNewOrder(cargoType);
-                alt.log(`cargoType ${cargoType}`);
-            });
+        alt.onServer('client:startDelivery', (cargoType) => {
+            this.startNewOrder(cargoType);
+            alt.log(`cargoType ${cargoType}`);
+        });
 
-            alt.onServer('client:cancelDelivery', () => {
-                this.cancelCurrentOrder();
-            });
+        alt.onServer('client:cancelDelivery', () => {
+            this.cancelCurrentOrder();
+        });
 
-            alt.onServer("explode",() =>{
-                        const player = alt.Player.local;
-                        native.addExplosion(
-                            player.vehicle.pos.x,
-                            player.vehicle.pos.y,
-                            player.vehicle.pos.z,
-                            9, // тип взрыва (9 - Vehicle)
-                            5.0, // радиус
-                            true, // звук
-                            false, // невидимый огонь
-                            0.0, // камера shake
-                            true
-                        );
-                    });
+        alt.onServer("explode",() =>{
+            const player = alt.Player.local;
+            native.addExplosion(
+                player.vehicle.pos.x,
+                player.vehicle.pos.y,
+                player.vehicle.pos.z,
+                9, // тип взрыва (9 - Vehicle)
+                5.0, // радиус
+                true, // звук
+                false, // невидимый огонь
+                0.0, // камера shake
+                true
+            );
+        });
 
         // Обработка входа/выхода из колшейпов
         alt.on('entityEnterColshape', this.handleEnterColshapeDeliveryJobClient.bind(this));
@@ -199,52 +208,39 @@ class DeliveryJobClient {
 
         }
 
-        createPoliceBlipsColshapes() {
-                this.config.policeStations.forEach((station, index) => {
-                    const item = this.createBlip(station, station.blipSprite, station.blipColor);
-                    
-                    const colshape = new alt.ColshapeSphere(station.x, station.y, station.z, 350);
-
-                    colshape.policeStationId = index;
-                    colshape.isPoliceZone = true;
-            
-                    this.policeColshapes.push(colshape);
-                });
-                alt.log(`Создано ${this.config.policeStations.length} полицейских участков`);
-            }
-
-        createBlip(point, sprite, color) {
-            const blip = new alt.PointBlip(point.x, point.y, point.z);
-            blip.sprite = sprite;
-            blip.color = color;
-            blip.name = point.name;
-            blip.scale = point.blipscale;
-            blip.shortRange = point.blipshortRange;
-            return blip;
-        }    
+    createPoliceBlipsColshapes() {
+        this.config.policeStations.forEach((station, index) => {
+            const policeVisuals = new PointVisuals(station).create();
         
-        createPoliceColshapes() {}
+            // Добавление дополнительных свойст для колшейпов после создания создания
+            policeVisuals.colshape.isPoliceZone = true; // нужно для проверки что автомобиль попал именно в полицейский колшейп, а не какой то другой
+            policeVisuals.colshape.policeStationId = index; //нужно для проверки в какой из полицейских участков заехал автомобиль
+        
+            this.policeColshapes.push(policeVisuals.colshape);
+        });
+        alt.log(`Создано ${this.config.policeStations.length} полицейских участков`);
+    }
 
-        startNewOrder(cargoType) {
-            if (this.currentOrder) {
-                this.cancelCurrentOrder();
-            }
-            // инициализируется класс конкретного заказа только при старте конкретного заказа
-            this.currentOrder = new DeliveryOrder(
-                cargoType,
-                this.config,
-                this.policeColshapes
-            );
-            this.currentOrder.deliveryJobClient = this; // cсылка для последующего обнуления
-            this.currentOrder.start();
+    startNewOrder(cargoType) {
+        if (this.currentOrder) {
+            this.cancelCurrentOrder();
         }
+        // инициализируется класс конкретного заказа только при старте конкретного заказа
+        this.currentOrder = new DeliveryOrder(
+            cargoType,
+            this.config,
+            this.policeColshapes
+        );
+        this.currentOrder.deliveryJobClient = this; // cсылка для последующего обнуления
+        this.currentOrder.start();
+    }
 
-        cancelCurrentOrder() {
-            if (this.currentOrder) {
-                this.currentOrder.cancel();
-                this.currentOrder = null;   //обнуление ссылки
-            }
+    cancelCurrentOrder() {
+        if (this.currentOrder) {
+            this.currentOrder.cancel();
+            this.currentOrder = null;   //обнуление ссылки
         }
+    }
 
     handleEnterColshapeDeliveryJobClient(colshape, entity) {
         const player = alt.Player.local;
