@@ -6,7 +6,7 @@ function drawNotification(message, autoHide = false) {
     native.addTextComponentSubstringPlayerName(message);
     const notificationId = native.endTextCommandThefeedPostTicker(false, false);
     // Таймер для скрытия уведомления через 3 секунды если кроме текста сообщения также передали true
-    if (autoHide !== false) {
+    if (autoHide) {
         setTimeout(() => {
             native.thefeedRemoveItem(notificationId);
         }, 3000);
@@ -36,7 +36,7 @@ class NotificationManager {
             //если WebView не загрузится за 2 секунды будет isLoaded = false
             const isLoaded = await Promise.race([loadPromise, timeoutPromise]);
             
-            if (isLoaded === true) {
+            if (isLoaded) {
                 this.isInitialized = true;
                 alt.log('Notification manager initialized SUCCESS');
             } else {
@@ -246,7 +246,7 @@ class DeliveryJobClient {
             this.currentOrder = null;   //обнуление ссылки
         }
     }
-
+    //логика на вход в колшейп
     handleEnterColshapeDeliveryJobClient(colshape, entity) {
         const player = alt.Player.local;
         //проверка на то что игрок в машине, в доставке если игрок не в машине ничего никогда не происходит
@@ -256,12 +256,12 @@ class DeliveryJobClient {
         // проверка на случай если будут добавлены еще колшейпы и в них зайдет игрок без заказа доставки
         if (this.currentOrder !== null) {
             alt.log(`Вошел в колшейп`);
-            this.currentOrder.handleColshapeEnterDeliveryOrder(colshape);
+            this.currentOrder.handleColshapeEnterDeliveryOrder(colshape);   //логика входа в колшейп у конкретного заказа
         }
     }
     //выход из колшейпа
     handleLeaveColshapeDeliveryJobClient(colshape, entity) {
-            if (notificationManager.isWebViewOpen !== false){
+            if (notificationManager.isWebViewOpen){
                 notificationManager.hidePersistent();
                 //очищает обработчик нажатия клавиши (который создается только при открытии WebViewOpen, поэтому в других случаях его можно не очищать)
                 this.currentOrder.handleColshapeLeave(colshape, entity);
@@ -278,7 +278,7 @@ class DeliveryOrder {
         this.config = config;   // (все loadingPoints, все unloadingPoints, все allowedVehicles, все policeStations)
         this.policeColshapes = policeColshapes;
         
-        this.state = 'empty';
+        this.state = 'selecting_points';    //'selecting_points'	изначальное состояние при старте системы
         this.loadingPoint = null;   //текущая точка погрузки
         this.unloadingPoint = null; //текущая точка разгрузки
         this.loadedVehId = null;    //сетевой id загруженной машины
@@ -288,7 +288,7 @@ class DeliveryOrder {
     async start() {
         await this.selectPoints();
         this.createLoadingPoint();
-        this.state = 'waiting_for_loading';   
+        this.state = 'waiting_for_loading';   //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
     }
 
     selectPoints() {
@@ -305,7 +305,7 @@ class DeliveryOrder {
             resolve();
         });
     }
-
+    // Проверка расстояния от выбранной точки разгрузки до полицейских участков
     async distanceFromPoliceStations() {
         const minDistance = 350;
 
@@ -319,7 +319,7 @@ class DeliveryOrder {
             return (distance < minDistance); //если distance меньше чем 350 isTooClose = true 
         });
         
-        if (isTooClose === true) {
+        if (isTooClose) {
             // Перевыбираем точку разгрузки, не меняя точки погрузки
             alt.log(`Точка разгрузки слишком близко к полиции, выбираентся новая...`);
             this.unloadingPoint = this.config.unloadingPoints[Math.floor(Math.random() * this.config.unloadingPoints.length)];
@@ -330,18 +330,18 @@ class DeliveryOrder {
     }
 
     createLoadingPoint() {
-        // Создает визуальные элементы (маркеры, блипы и колшейпы)
+        // создает визуальные элементы (маркеры, блипы и колшейпы)
         const pointVisuals = new PointVisuals(this.loadingPoint).create();
         
-        // Создает PointBase с поведением (логика точки погрузки/разгрузки)
+        // создает PointBase с поведением (логика точки погрузки/разгрузки)
         this.loadingPoint = new PointBase('loading', this, pointVisuals);
     }
 
     createUnloadingPoint() {
-        // Создает визуальные элементы (маркеры, блипы и колшейпы)
+        // создает визуальные элементы (маркеры, блипы и колшейпы)
         const pointVisuals = new PointVisuals(this.unloadingPoint).create();
         
-        // Создает PointBase с поведением (логика точки погрузки/разгрузки)
+        // создает PointBase с поведением (логика точки погрузки/разгрузки)
         this.unloadingPoint = new PointBase('unloading', this, pointVisuals);
     }
 
@@ -350,35 +350,36 @@ class DeliveryOrder {
         
         // если в будущем будет добавлено больше колшейпов проверка handleColshapeEnterDeliveryOrder будет return
         if (!this.loadingPoint || !this.unloadingPoint || !this.policeColshapes) return;
-
-        if (this.state === 'waiting_for_loading' ) {
+        // если 'waiting_for_loading' значит колшейп точки погрузки
+        if (this.state === 'waiting_for_loading' ) {    //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
             if (colshape === this.loadingPoint.pointVisuals.colshape){
                 this.loadingPoint.PointLoad(colshape, alt.Player.local.vehicle);
             }
         } 
-        if (this.state === 'delivering') {
+        //если 'delivering' значит колшейп точки разгрузки
+        if (this.state === 'delivering') {  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
             if (colshape === this.unloadingPoint.pointVisuals.colshape){
                 this.unloadingPoint.PointUnload(colshape, alt.Player.local.vehicle);
            }
         }
-        
-        if(colshape.isPoliceZone === true){
+        //если колшейп полицейский и груз Illegal и в колшейп вошли на загруженной машине
+        if(colshape.isPoliceZone){
             if ((this.cargoType === 'Illegal') && (alt.Player.local.vehicle.id === this.loadedVehId)){
-                alt.emitServer('client:failDelivery');
+                alt.emitServer('client:failDelivery');  //отправляет на сервер информацию о провале доставки
             }
         }
     }
 
     handleColshapeLeave(colshape) {
-    // Очищаем обработчики клавиш при выходе из колшейпа
-        if (this.state === 'waiting_for_loading' && this.loadingPoint) {
+    // Очищаем обработчики клавиш при выходе из колшейпа (только если открыта webview)
+        if (this.state === 'waiting_for_loading' && this.loadingPoint) {     //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
                 this.loadingPoint.cleanup();
         }
-        if (this.state === 'delivering' && this.unloadingPoint) {
+        if (this.state === 'delivering' && this.unloadingPoint) {   //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
                 this.unloadingPoint.cleanup();
         }
     }
-
+    //процесс погрзки (после проверки на соблюдение всех необходимых для нее требований)
     async executeLoading(vehicle) {
         const vehicleBlocker = new VehicleBlocker();
         drawNotification('Начало погрузки...', true);   //true значит что уведмоление пропадет через 3 чекунды
@@ -388,13 +389,13 @@ class DeliveryOrder {
 
         this.loadingPoint.pointVisuals.destroy();
         this.createUnloadingPoint();
-        this.state = 'delivering';
+        this.state = 'delivering';  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
         
         drawNotification(`Погрузка завершена! Груз: ${this.cargoType}`);
-        alt.emitServer('client:startLoading', this.loadedVehId);
+        alt.emitServer('client:startLoading', this.loadedVehId);    //передает на сервер что игрок погрузил груз
 
     }
-
+    //процесс разгрузки (после проверки на соблюдение всех необходимых для нее требований)
     async executeUnloading(vehicle) {
         const vehicleBlocker = new VehicleBlocker();
         drawNotification('Начало разгрузки...', true);   //true значит что уведмоление пропадет через 3 чекунды
@@ -403,7 +404,7 @@ class DeliveryOrder {
         this.loadedVehId = null;
 
         this.unloadingPoint.pointVisuals.destroy();
-        this.state = 'empty';
+        this.state = 'empty';   //'empty'			нет активного заказа (провален или выполнен)
         
         alt.emitServer('client:completeDelivery');
         drawNotification(`Доставка завершена! Груз: ${this.cargoType}`);
@@ -413,20 +414,20 @@ class DeliveryOrder {
     }
 
      cancel() {
-        // ПОЛНАЯ ОЧИСТКА РЕСУРСОВ
-        if (this.state === 'waiting_for_loading') {
+        // полная очистка ресурсов
+        if (this.state === 'waiting_for_loading') { //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
             this.loadingPoint.cleanup();
             this.loadingPoint.pointVisuals.destroy();
-            this.state = 'empty';
+            this.state = 'empty';   //'empty'			нет активного заказа (провален или выполнен)
         }
-        if (this.state === 'delivering') {
+        if (this.state === 'delivering') {  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
             this.unloadingPoint.cleanup();
             this.unloadingPoint.pointVisuals.destroy();
             this.loadedVehId = null;
-            this.state = 'empty';
+            this.state = 'empty';   //'empty'			нет активного заказа (провален или выполнен)
         }
         
-        // ОБНУЛЕНИЕ В РОДИТЕЛЕ
+        // обнуление в родители
         if (this.deliveryJobClient) {
             this.deliveryJobClient.currentOrder = null;
         }
@@ -443,12 +444,12 @@ class PointBase {
         this.keyPressHandler = null; // свойство для хранения обработчика
     }
 
-    // Метод PointLoad - инкапсулирует поведение точки погрузки
+    // метод PointLoad - инкапсулирует поведение точки погрузки
     PointLoad(colshape, entity) {
         alt.log (`PointLoad`)
         const player = alt.Player.local;
         
-        // Проверка на разрешенные модели авто
+        // проверка на разрешенные модели авто
         if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) {
             drawNotification('Транспорт не подходит для перевозки');
             return;
@@ -463,13 +464,14 @@ class PointBase {
         }
 
         // Создает новый обработчик для клавиши E
-        this.keyPressHandler = (key) => {
-            if ((key === 69) && (notificationManager.isWebViewOpen !== false) && (this.pointVisuals.position.distanceTo(player.pos) < 10)) {
+        this.keyPressHandler = (key) => { 
+            //проверка на нажатие E и соблюдение всех необходимых условий для погрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView) (можно добавить еще проверки на разрешенную модель авто если надо для защиты)
+            if ((key === 69) && (notificationManager.isWebViewOpen) && (this.pointVisuals.position.distanceTo(player.pos) < 10)) {
 
-                // Удаляем обработчик после нажатия
+                // удаляет обработчик после нажатия
                 this.cleanup();
-                notificationManager.hidePersistent();
-                if (!player.vehicle) {  // Если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
+                notificationManager.hidePersistent();   //скрыть WebView
+                if (!player.vehicle) {  // если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
                         drawNotification('Вы не находитесь в транспорте');
                         return;
                 }
@@ -483,16 +485,16 @@ class PointBase {
             }   
         };
 
-        // Регистрирует обработчик
+        // регистрирует обработчик
         alt.on('keydown', this.keyPressHandler);
-        alt.log('Создан обработчик 1')
+        alt.log('Создан обработчик')
     }
 
-    // Метод PointUnload - инкапсулирует поведение точки разгрузки
+    // метод PointUnload - инкапсулирует поведение точки разгрузки
     PointUnload(colshape, entity) {
         const player = alt.Player.local;
 
-        // Проверка что это тот же транспорт
+        // проверка что это тот же транспорт что и был загружке
         if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {
             drawNotification('Это не тот транспорт, в который был загружен груз');
             return;
@@ -501,16 +503,17 @@ class PointBase {
         notificationManager.showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
 
         this.keyPressHandler = (key) => {
-            if ((key === 69) && (notificationManager.isWebViewOpen !== false) && (this.pointVisuals.position.distanceTo(player.pos) < 15)) {
-                // Удаляем обработчик после нажатия
+            //проверка на нажатие E и соблюдение всех необходимых условий для разгрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView) (можно добавить еще проверки на разрешенную модель авто если надо для защиты)
+            if ((key === 69) && (notificationManager.isWebViewOpen) && (this.pointVisuals.position.distanceTo(player.pos) < 15)) {
+                // удаляет обработчик после нажатия
                 this.cleanup();
-                notificationManager.hidePersistent();
+                notificationManager.hidePersistent();    //скрыть WebView
                 //проверку ниже можно убрать, так как если игрок вышел из авто и/или пересел в другую машину ему это не даст никакого приемущества (но для логики игрового процесса стоит остаивть)
                 if (!player.vehicle) {  // Если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
                         drawNotification('Вы не находитесь в транспорте');
                         return;
                 }
-                if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {
+                if (this.deliveryOrder.loadedVehId !== player.vehicle.id) { //если игрок заехал на загруженном транспорте, но не выходя из колшейпа пересел в другое авто (проверка для того что бы не нарушалась логика игрового процесса) 
                     drawNotification('Это не тот транспорт, в который был загружен груз');
                 return;
                 }
@@ -519,16 +522,16 @@ class PointBase {
             }   
         };
 
-        // Регистрируем обработчик
+        // регистрирует обработчик
         alt.on('keydown', this.keyPressHandler);
         alt.log('Создан обработчик разгрузки')
     }
 
-        // Метод для очистки обработчика keyPressHandler
+        // метод для очистки обработчика keyPressHandler
         cleanup() {
             if (this.keyPressHandler) {
                 alt.off('keydown', this.keyPressHandler);
-                alt.log('Удален обработчик 2')
+                alt.log('Удален обработчик')
                 this.keyPressHandler = null;
             }
         }
@@ -537,6 +540,3 @@ class PointBase {
 
 
 new DeliveryJobClient();
-
-// избавиться от const notificationManager = new NotificationManager();
-// проверить нет ли неочищенных обработчиков (Map) колшейпов и тд

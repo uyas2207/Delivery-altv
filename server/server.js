@@ -7,7 +7,7 @@ import * as fs from 'fs';
 //для работы с путями файлов
 import * as path from 'path';
 
-
+// базовый класс для всех типов грузов
 class CargoBase {
     constructor(type, reward, reason) {
         this.type = type;
@@ -16,7 +16,7 @@ class CargoBase {
     }
 
     async onDamage(vehicle, attacker, deliveryJob) {
-        // Базовая логика - без обработки урона
+        // базовая логика - без обработки урона
         
         alt.log(`CargoBase авто получило урон после проверок`);
         return false;   //урон не обработан
@@ -25,7 +25,7 @@ class CargoBase {
     onSuccessfulDelivery(player) {
         alt.emitClient(player, 'drawNotification', `+${this.reward}\$`);
     }
-
+    //общая логика для провала
     onDeliveryFailed(player) {
         alt.emitClient(player, 'drawNotification',`${this.reason}`);
         alt.emitClient(player, 'drawNotification','заказ отменен!');
@@ -33,21 +33,21 @@ class CargoBase {
 }
 
 // Конкретные типы грузов
-class CommonCargo extends CargoBase {
+class CommonCargo extends CargoBase {   
     constructor() {
-        super('Common', 1000, null);
+        super('Common', 1000, null);    //type, reward, reason
     }
 }
 
 class HardCargo extends CargoBase {
     constructor() {
-        super('Hard', 2000, 'Вы уничтожили груз');
-        this.destroyInProgress = false;
+        super('Hard', 2000, 'Вы уничтожили груз');  //type, reward, reason
+        this.destroyInProgress = false; //для проверки началась ли обработка урона (что бы не было случаев что урон несколько раз обработался за 0,5 секунды и программа будент пытаться несколько раз удалить автомобиль)
     }
 
     async onDamage(vehicle, attacker, deliveryJob) {
         if (!vehicle.valid) return false;   // урон не обработан
-        if (this.destroyInProgress === true) return true; // урон обработан
+        if (this.destroyInProgress) return true; // урон обработан
 
         alt.log(`HardCargo авто получило урон после проверок`);
         this.destroyInProgress = true;
@@ -57,7 +57,7 @@ class HardCargo extends CargoBase {
                 vehicle.destroy();
                 deliveryJob.fail(attacker);
         }
-        finally {
+        finally {   //в конце поставится this.destroyInProgress = false; и можно будет снова обрабатывать урон при следующем заказе
             this.destroyInProgress = false;
             alt.log('finally HardCargo');
         }
@@ -68,13 +68,13 @@ class HardCargo extends CargoBase {
 
 class DangerCargo extends CargoBase {
     constructor() {
-        super('Danger', 3000, 'Вы взорвали груз');
-        this.destroyInProgress = false;
+        super('Danger', 3000, 'Вы взорвали груз');  //type, reward, reason
+        this.destroyInProgress = false; //для проверки началась ли обработка урона (что бы не было случаев что урон несколько раз обработался за 0,5 секунды и программа будент пытаться несколько раз удалить автомобиль)
     }
 
    async onDamage(vehicle, attacker, deliveryJob) {
         if (!vehicle.valid) return false;   // урон не обработан
-        if (this.destroyInProgress === true) return true; // урон обработан
+        if (this.destroyInProgresse) return true; // урон обработан
 
         alt.log(`DangerCargo авто получило урон после проверок`);
         this.destroyInProgress = true;
@@ -85,7 +85,7 @@ class DangerCargo extends CargoBase {
                 vehicle.destroy();
                 deliveryJob.fail(attacker);
         }
-        finally {
+        finally {   //в конце поставится this.destroyInProgress = false; и можно будет снова обрабатывать урон при следующем заказе
             this.destroyInProgress = false;  
             alt.log('finally DangerCargo');
         }
@@ -96,7 +96,7 @@ class DangerCargo extends CargoBase {
 
 class IllegalCargo extends CargoBase {
     constructor() {
-        super('Illegal', 1500, 'Вы находились слишком близко к полицейскому участку');
+        super('Illegal', 1500, 'Вы находились слишком близко к полицейскому участку');  //type, reward, reason
     }
 }
 
@@ -147,29 +147,30 @@ class ConfigManager {
 class DeliveryJobSystem {
     constructor() {  
         this.configManager = new ConfigManager();
-        this.activeOrders = new Map();
+        this.activeOrders = new Map();  // хранит активные заказы по ID игроков
         this.init();
     }
 
     init() {
+        //получение данных из конфига
         this.configManager.loadConfig();
-
+        //отправляет конфиг игроку после входа
         alt.on('playerConnect', (player) => {
             this.configManager.sendConfigToPlayer(player);
         });
-
-        alt.onClient('client:startLoading', (player, loadedVehId) => {
-            this.startLoading(player, loadedVehId);
+        //когда клиент загрузил автомобиль приходит ивент с клиента
+        alt.onClient('client:startLoading', (player, loadedVehId) => {  
+            this.startLoading(player, loadedVehId); 
         });
-
+        //если с клиента приходит информация что игрок завершил доставку успешно
         alt.onClient('client:completeDelivery', (player) => {
             this.completeDelivery(player);
         });
-
+        //если с клиента приходит информация что игрок провалил доставку 
         alt.onClient('client:failDelivery', (player) => {
             this.failDelivery(player);
         });
-
+        
         alt.on('vehicleDamage', (vehicle, attacker) => {
             alt.log(`авто получило урон перед проверками`);
             this.handleVehicleDamage(vehicle, attacker);
@@ -185,27 +186,27 @@ class DeliveryJobSystem {
     }
 
     startNewOrder(player) {
-        // Отменяем текущий заказ если есть
+        // отменяем текущий заказ если есть
         if (this.activeOrders.has(player.id)) {
             this.cancelOrder(player);
         }
 
         const order = new DeliveryJob(player, this.configManager);
         this.activeOrders.set(player.id, order);
-        order.start();
+        order.start();  // делегирует логику конкретному заказу
     }     
 
     startLoading(player, loadedVehId) {
         const order = this.activeOrders.get(player.id);
         if (order) {
-            order.Loaded(loadedVehId);
+            order.Loaded(loadedVehId);  // делегирует логику конкретному заказу
         }
     }
 
     completeDelivery(player) {
         const order = this.activeOrders.get(player.id);
         if (order) {
-            order.complete();
+            order.complete();   // делегирует логику конкретному заказу
             
             this.activeOrders.delete(player.id);
         }
@@ -214,16 +215,16 @@ class DeliveryJobSystem {
     failDelivery(player) {
         const order = this.activeOrders.get(player.id);
         if (order) {
-            order.fail(); // Делегируем логику провала конкретному заказу
+            order.fail(); // делегирует логику конкретному заказу
         }
     }
 
-    //Для работы команды cancelorder
+
     cancelOrder(player) {
         const order = this.activeOrders.get(player.id);
         if (order) {
-            order.cancel();
-            this.activeOrders.delete(player.id);
+            order.cancel(); // делегирует логику конкретному заказу
+            this.activeOrders.delete(player.id);       
         }
     }   
 
@@ -231,8 +232,8 @@ class DeliveryJobSystem {
         if (!vehicle?.valid || !(attacker instanceof alt.Player) || !attacker.valid) return;
 
         const order = this.activeOrders.get(attacker.id);
-        if (order && order.loadedVehId === vehicle.id) {
-            alt.log(`авто получило урон после проверок на активный заказ`);
+        if (order && order.loadedVehId === vehicle.id) {    //проверка что урон был получеен машиной в которую погружен заказ
+            alt.log(`авто получило урон после проверок на загруженный автомобиль`);
             alt.log(`order.loadedVehId: ${ order.loadedVehId}`);
             await order.handleDamage(vehicle, attacker);
         }
@@ -243,13 +244,11 @@ class DeliveryJobSystem {
 // Конкретный личный заказ доставки
 class DeliveryJob {
     constructor(player, configManager) {
-        this.player = player;
-        this.configManager = configManager;
-    //    this.configManager = configManager;
-        this.cargo = null;                                                          // текущий тип заказа
-        this.loadedVehId = null;
+        this.player = player;   //id игрока которой выполняет доставку
+        this.configManager = configManager; 
+        this.cargo = null;          // текущий тип заказа
+        this.loadedVehId = null;    //id загруженнного автомобился
         this.cargoTypes = this.configManager.getCargoTypes();  // Получаем типы грузов из configManager
-    //    this.cargoTypes = [CommonCargo, HardCargo, DangerCargo, IllegalCargo];      //все типы заказа CommonCargo, HardCargo, DangerCargo, IllegalCargo
         this.state = 'empty';                 // empty, loading, delivering, completed, cancelled
         this.damageHandlingInProgress = false; // для единоразовой обработки урона
     }
@@ -262,39 +261,43 @@ class DeliveryJob {
             alt.log(`Выбран тип груза: ${this.cargo.type}`);
             alt.emitClient(this.player, 'client:startDelivery', this.cargo.type);
         }
-
+//запоминает loadedVehId
     Loaded(loadedVehId) {
         this.loadedVehId = loadedVehId;
-        this.state = 'delivering';
+        this.state = 'delivering';  //автомобиль был загружен и едет до точки разгрузки, для проверок урона
         alt.log(`Loaded vehicle: ${loadedVehId}`);
     }
-
+// выдает награду
     complete() {
-        this.state = 'completed';
-        this.cargo.onSuccessfulDelivery(this.player);
+        this.state = 'completed';   // пока что не используется, но для дебага и для возможных расширений в коде
+        this.cargo.onSuccessfulDelivery(this.player);   // выдает награду
+        this.loadedVehId = null;
         alt.log(`Delivery completed for ${this.player.id}`);
     }
-
+// отменяет текущий заказ
     cancel() {
-        this.state = 'cancelled';
+        this.state = 'cancelled';   // пока что не используется, но для дебага и для возможных расширений в коде
         alt.emitClient(this.player, 'client:cancelDelivery');
+        this.loadedVehId = null;
         alt.log(`Delivery cancelled for ${this.player.id}`);
     }
-
+// отменяет текущий заказ + отправляет уведомление с причиной провала
     fail() {
-        this.state = 'failed';
+        this.state = 'failed';  // пока что не используется, но для дебага и для возможных расширений в коде
         this.cargo.onDeliveryFailed(this.player);
         alt.emitClient(this.player, 'client:cancelDelivery');
+        this.loadedVehId = null;
         alt.log(`Delivery failed for ${this.player.id}`);
     }
 
     async handleDamage(vehicle, attacker) {
+        //если авто получило урон, но игрок не едет к точке разгрузки или если урон уже обрабатывается (по идее проверка на state не нужна так как раньше была проверка на loadedVehId)
         if (this.state !== 'delivering' || this.damageHandlingInProgress) return;
-        this.damageHandlingInProgress = true;
+        this.damageHandlingInProgress = true;   // что быв повтоно не вызывались проверки если авто еще н6е успело удалиться
         
         try {
             await this.cargo.onDamage(vehicle, attacker, this);
-        } finally {
+        } finally { // после завершения обработки урона ставит this.damageHandlingInProgress = false;
             this.damageHandlingInProgress = false;
         }
     }
