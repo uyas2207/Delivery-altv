@@ -21,7 +21,7 @@ class CargoBase {
         alt.log(`CargoBase авто получило урон после проверок`);
         return false;   //урон не обработан
     }
-
+    //общая логика для успешного завершения
     onSuccessfulDelivery(player) {
         alt.emitClient(player, 'drawNotification', `+${this.reward}\$`);
     }

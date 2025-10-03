@@ -98,7 +98,7 @@ class PointVisuals {
     }
 
     create() {
-        //Так как у colshapeRadius у полицейских учатсков не прописан в конфиге он undefined
+        //Так как colshapeRadius у полицейских учатсков не прописан в конфиге он undefined
         if (this.pointConfig.colshapeRadius === undefined){
             this.pointConfig.colshapeRadius = 350;
         }
@@ -487,7 +487,7 @@ class PointBase {
 
         // регистрирует обработчик
         alt.on('keydown', this.keyPressHandler);
-        alt.log('Создан обработчик')
+        alt.log('Создан обработчик погрузки')
     }
 
     // метод PointUnload - инкапсулирует поведение точки разгрузки
