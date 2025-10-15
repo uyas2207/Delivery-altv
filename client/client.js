@@ -1,5 +1,11 @@
 import * as alt from 'alt-client';
 import * as native from "natives";
+
+alt.onServer('Server:Log', (msg1, msg2) => {
+    alt.log(`Message From Server: ${msg1}`);
+    alt.log(`Message From Server: ${msg2}`);
+});
+
 //вызов гташных уведмолени с помощью нативок 
 function drawNotification(message, autoHide = false) {
     native.beginTextCommandThefeedPost('STRING');

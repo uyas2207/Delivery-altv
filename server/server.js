@@ -6,99 +6,11 @@ import * as chat from 'alt:chat';
 import * as fs from 'fs';       
 //для работы с путями файлов
 import * as path from 'path';
-
-// базовый класс для всех типов грузов
-class CargoBase {
-    constructor(type, reward, reason) {
-        this.type = type;
-        this.reward = reward;
-        this.reason = reason;
-    }
-
-    async onDamage(vehicle, attacker, deliveryJob) {
-        // базовая логика - без обработки урона
-        
-        alt.log(`CargoBase авто получило урон после проверок`);
-        return false;   //урон не обработан
-    }
-    //общая логика для успешного завершения
-    onSuccessfulDelivery(player) {
-        alt.emitClient(player, 'drawNotification', `+${this.reward}\$`);
-    }
-    //общая логика для провала
-    onDeliveryFailed(player) {
-        alt.emitClient(player, 'drawNotification',`${this.reason}`);
-        alt.emitClient(player, 'drawNotification','заказ отменен!');
-    }
-}
-
-// Конкретные типы грузов
-class CommonCargo extends CargoBase {   
-    constructor() {
-        super('Common', 1000, null);    //type, reward, reason
-    }
-}
-
-class HardCargo extends CargoBase {
-    constructor() {
-        super('Hard', 2000, 'Вы уничтожили груз');  //type, reward, reason
-        this.destroyInProgress = false; //для проверки началась ли обработка урона (что бы не было случаев что урон несколько раз обработался за 0,5 секунды и программа будент пытаться несколько раз удалить автомобиль)
-    }
-
-    async onDamage(vehicle, attacker, deliveryJob) {
-        if (!vehicle.valid) return false;   // урон не обработан
-        if (this.destroyInProgress) return true; // урон обработан
-
-        alt.log(`HardCargo авто получило урон после проверок`);
-        this.destroyInProgress = true;
-
-        try {
-            await new Promise(resolve => alt.setTimeout(resolve, 500));
-                vehicle.destroy();
-                deliveryJob.fail(attacker);
-        }
-        finally {   //в конце поставится this.destroyInProgress = false; и можно будет снова обрабатывать урон при следующем заказе
-            this.destroyInProgress = false;
-            alt.log('finally HardCargo');
-        }
-        
-        return true;    // урон обработан
-    }
-}
-
-class DangerCargo extends CargoBase {
-    constructor() {
-        super('Danger', 3000, 'Вы взорвали груз');  //type, reward, reason
-        this.destroyInProgress = false; //для проверки началась ли обработка урона (что бы не было случаев что урон несколько раз обработался за 0,5 секунды и программа будент пытаться несколько раз удалить автомобиль)
-    }
-
-   async onDamage(vehicle, attacker, deliveryJob) {
-        if (!vehicle.valid) return false;   // урон не обработан
-        if (this.destroyInProgresse) return true; // урон обработан
-
-        alt.log(`DangerCargo авто получило урон после проверок`);
-        this.destroyInProgress = true;
-
-        try {
-            alt.emitClient(attacker, 'explode');
-            await new Promise(resolve => alt.setTimeout(resolve, 500));
-                vehicle.destroy();
-                deliveryJob.fail(attacker);
-        }
-        finally {   //в конце поставится this.destroyInProgress = false; и можно будет снова обрабатывать урон при следующем заказе
-            this.destroyInProgress = false;  
-            alt.log('finally DangerCargo');
-        }
-        
-        return true;    // урон обработан
-    }
-}
-
-class IllegalCargo extends CargoBase {
-    constructor() {
-        super('Illegal', 1500, 'Вы находились слишком близко к полицейскому участку');  //type, reward, reason
-    }
-}
+//добавление логики каждого типа груза из папки shared\cargo
+import { CommonCargo } from '../shared/cargo/CommonCargo.js';
+import { DangerCargo } from '../shared/cargo/DangerCargo.js';
+import { HardCargo } from '../shared/cargo/HardCargo.js';
+import { IllegalCargo } from '../shared/cargo/IllegalCargo.js';
 
 //для работы с данными из конфига
 class ConfigManager {
@@ -174,8 +86,9 @@ class DeliveryJobSystem {
         alt.on('vehicleDamage', (vehicle, attacker) => {
             alt.log(`авто получило урон перед проверками`);
             this.handleVehicleDamage(vehicle, attacker);
+
         });
-        //единственный способ начать погрузку /randomload
+        //единственный способ начать доставку /randomload
         chat.registerCmd("randomload", (player) => {
             this.startNewOrder(player);
         });
