@@ -69,6 +69,7 @@ class DeliveryJobSystem {
         //отправляет конфиг игроку после входа
         alt.on('playerConnect', (player) => {
             this.configManager.sendConfigToPlayer(player);
+            chat.send(player, "{80eb34}Press {ff0000}T {80eb34}and type {ff0000}/randomload {80eb34}to start delivery.");
         });
         //когда клиент загрузил автомобиль приходит ивент с клиента
         alt.onClient('client:startLoading', (player, loadedVehId) => {  

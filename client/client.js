@@ -1,11 +1,6 @@
 import * as alt from 'alt-client';
 import * as native from "natives";
 
-alt.onServer('Server:Log', (msg1, msg2) => {
-    alt.log(`Message From Server: ${msg1}`);
-    alt.log(`Message From Server: ${msg2}`);
-});
-
 //вызов гташных уведмолени с помощью нативок 
 function drawNotification(message, autoHide = false) {
     native.beginTextCommandThefeedPost('STRING');
@@ -22,11 +17,26 @@ function drawNotification(message, autoHide = false) {
 alt.onServer('drawNotification', drawNotification);
 //уведомления через WebView
 class NotificationManager {
+    static instance = null;
+    
+    static getInstance() {
+        if (!this.instance) {
+            this.instance = new NotificationManager();
+        }
+        return this.instance;
+    }
+
     constructor() {
+        if (NotificationManager.instance) {
+            return NotificationManager.instance;
+        }
+        
         this.webView = null;
         this.isInitialized = false;
         this.isWebViewOpen = false;
         this.init();
+        
+        NotificationManager.instance = this;
     }
     
     async init() {
@@ -65,12 +75,15 @@ class NotificationManager {
     hidePersistent(id) {
         if (this.isInitialized) {
             this.webView.emit('hidePersistentNotification', id);
+            this.isWebViewOpen = false;
         }
-        this.isWebViewOpen = false;
+        else{
+            alt.log('Попытка скрыть Notification при isInitialized === null');
+        }
     }
 }
 
-const notificationManager = new NotificationManager();
+//const notificationManager = new NotificationManager();
 
 // Блокировщик транспорта
 class VehicleBlocker {
@@ -267,10 +280,10 @@ class DeliveryJobClient {
     }
     //выход из колшейпа
     handleLeaveColshapeDeliveryJobClient(colshape, entity) {
-            if (notificationManager.isWebViewOpen){
-                notificationManager.hidePersistent();
-                //очищает обработчик нажатия клавиши (который создается только при открытии WebViewOpen, поэтому в других случаях его можно не очищать)
-                this.currentOrder.handleColshapeLeave(colshape, entity);
+        if (NotificationManager.getInstance().isWebViewOpen){
+            NotificationManager.getInstance().hidePersistent();
+            //очищает обработчик нажатия клавиши (который создается только при открытии WebViewOpen, поэтому в других случаях его можно не очищать)
+            this.currentOrder.handleColshapeLeave(colshape, entity);
         }
     }     
 
@@ -461,7 +474,7 @@ class PointBase {
             return;
         }
 
-        notificationManager.showPersistent("Погрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать погрузку");
+        NotificationManager.getInstance().showPersistent("Погрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать погрузку");
         
         //таких ситуаций в текущем коде быть не может, проверка есть на случай если потом будут добавлены еще обработчки при расширении функционала доставки
         if (this.keyPressHandler) {
@@ -472,11 +485,11 @@ class PointBase {
         // Создает новый обработчик для клавиши E
         this.keyPressHandler = (key) => { 
             //проверка на нажатие E и соблюдение всех необходимых условий для погрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView) (можно добавить еще проверки на разрешенную модель авто если надо для защиты)
-            if ((key === 69) && (notificationManager.isWebViewOpen) && (this.pointVisuals.position.distanceTo(player.pos) < 10)) {
+            if ((key === 69) && (NotificationManager.getInstance().isWebViewOpen) && (this.pointVisuals.position.distanceTo(player.pos) < 10)) {
 
                 // удаляет обработчик после нажатия
                 this.cleanup();
-                notificationManager.hidePersistent();   //скрыть WebView
+                NotificationManager.getInstance().hidePersistent();   //скрыть WebView
                 if (!player.vehicle) {  // если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
                         drawNotification('Вы не находитесь в транспорте');
                         return;
@@ -506,14 +519,14 @@ class PointBase {
             return;
         }
 
-        notificationManager.showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
+        NotificationManager.getInstance().showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
 
         this.keyPressHandler = (key) => {
             //проверка на нажатие E и соблюдение всех необходимых условий для разгрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView) (можно добавить еще проверки на разрешенную модель авто если надо для защиты)
-            if ((key === 69) && (notificationManager.isWebViewOpen) && (this.pointVisuals.position.distanceTo(player.pos) < 15)) {
+            if ((key === 69) && (NotificationManager.getInstance().isWebViewOpen) && (this.pointVisuals.position.distanceTo(player.pos) < 15)) {
                 // удаляет обработчик после нажатия
                 this.cleanup();
-                notificationManager.hidePersistent();    //скрыть WebView
+                NotificationManager.getInstance().hidePersistent();    //скрыть WebView
                 //проверку ниже можно убрать, так как если игрок вышел из авто и/или пересел в другую машину ему это не даст никакого приемущества (но для логики игрового процесса стоит остаивть)
                 if (!player.vehicle) {  // Если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
                         drawNotification('Вы не находитесь в транспорте');
