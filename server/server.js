@@ -64,7 +64,7 @@ class DeliveryJobSystem {
     constructor() {  
         this.configManager = new ConfigManager();
         this.activeOrders = new Map();  // хранит активные заказы по ID игроков
-        this.DeliveryState = DeliveryState; // сохраняем DeliveryState для использования в классе
+   //     this.DeliveryState = DeliveryState; // сохраняем DeliveryState для использования в классе
         this.init();
     }
 
@@ -110,7 +110,7 @@ class DeliveryJobSystem {
             this.cancelOrder(player);
         }
 
-        const order = new DeliveryJob(player, this.configManager, this.DeliveryState);
+        const order = new DeliveryJob(player, this.configManager);
         this.activeOrders.set(player.id, order);
         order.start();  // делегирует логику конкретному заказу
     }     
@@ -162,21 +162,21 @@ class DeliveryJobSystem {
 
 // Конкретный личный заказ доставки
 class DeliveryJob {
-    constructor(player, configManager, DeliveryState) {
+    constructor(player, configManager) {
         this.player = player;   //id игрока которой выполняет доставку
         this.configManager = configManager; 
-        this.DeliveryState = DeliveryState;
+    //  this.DeliveryState = DeliveryState;
         this.cargo = null;          // текущий тип заказа
         this.loadedVehId = null;    //id загруженнного автомобился
         this.cargoTypes = this.configManager.getCargoTypes();  // Получаем типы грузов из configManager
-        this.state = this.DeliveryState.EMPTY;                 // empty, loading, delivering, completed, cancelled
+        this.state = DeliveryState.EMPTY;                 // empty, loading, delivering, completed, cancelled
         this.damageHandlingInProgress = false; // для единоразовой обработки урона
     }
 
     start() {
             const CargoClass = this.cargoTypes[Math.floor(Math.random() * this.cargoTypes.length)];
             this.cargo = new CargoClass();
-            this.state = this.DeliveryState.ACTIVE; //показывает что заказ только что начался
+            this.state = DeliveryState.ACTIVE; //показывает что заказ только что начался
 
             alt.log(`Выбран тип груза: ${this.cargo.type}`);
             alt.emitClient(this.player, 'client:startDelivery', this.cargo.type);
@@ -184,26 +184,26 @@ class DeliveryJob {
 //запоминает loadedVehId
     Loaded(loadedVehId) {
         this.loadedVehId = loadedVehId;
-        this.state = this.DeliveryState.DELIVERING;  //автомобиль был загружен и едет до точки разгрузки, для проверок урона
+        this.state = DeliveryState.DELIVERING;  //автомобиль был загружен и едет до точки разгрузки, для проверок урона
         alt.log(`Loaded vehicle: ${loadedVehId}`);
     }
 // выдает награду
     complete() {
-        this.state = this.DeliveryState.COMPLETED;   // пока что не используется, но для дебага и для возможных расширений в коде
+        this.state = DeliveryState.COMPLETED;   // пока что не используется, но для дебага и для возможных расширений в коде
         this.cargo.onSuccessfulDelivery(this.player);   // выдает награду
         this.loadedVehId = null;
         alt.log(`Delivery completed for ${this.player.id}`);
     }
 // отменяет текущий заказ
     cancel() {
-        this.state = this.DeliveryState.CANCELLED;   // пока что не используется, но для дебага и для возможных расширений в коде
+        this.state = DeliveryState.CANCELLED;   // пока что не используется, но для дебага и для возможных расширений в коде
         alt.emitClient(this.player, 'client:cancelDelivery');
         this.loadedVehId = null;
         alt.log(`Delivery cancelled for ${this.player.id}`);
     }
 // отменяет текущий заказ + отправляет уведомление с причиной провала
     fail() {
-        this.state = this.DeliveryState.FAILED;  // пока что не используется, но для дебага и для возможных расширений в коде
+        this.state = DeliveryState.FAILED;  // пока что не используется, но для дебага и для возможных расширений в коде
         this.cargo.onDeliveryFailed(this.player);
         alt.emitClient(this.player, 'client:cancelDelivery');
         this.loadedVehId = null;
@@ -212,7 +212,7 @@ class DeliveryJob {
 
     async handleDamage(vehicle, attacker) {
         //если авто получило урон, но игрок не едет к точке разгрузки или если урон уже обрабатывается (по идее проверка на state не нужна так как раньше была проверка на loadedVehId)
-        if (this.state !== this.DeliveryState.DELIVERING || this.damageHandlingInProgress) return;
+        if (this.state !== DeliveryState.DELIVERING || this.damageHandlingInProgress) return;
         this.damageHandlingInProgress = true;   // что быв повтоно не вызывались проверки если авто еще н6е успело удалиться
         
         try {
