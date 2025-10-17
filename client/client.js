@@ -15,30 +15,48 @@ function drawNotification(message, autoHide = false) {
 }
 //для вызова уведомлений со стороны сервера
 alt.onServer('drawNotification', drawNotification);
+
 //уведомления через WebView
 class NotificationManager {
-    static instance = null;
-    
+    static instance = null;    //для хранения единственного экземпляра класса
+    //глобальный метод для получение экземпляра класса (информации о состоянии WebView)
     static getInstance() {
-        if (!this.instance) {
+        if (!this.instance) {   // если экземпляр не существует создает его
+            alt.log('instance создан в первый раз:');
             this.instance = new NotificationManager();
         }
+        alt.log('Передан instance:');
+        alt.log(`this.instance: ${JSON.stringify(this.instance, null, '\t')}`);
+        // возвращает существующий или только что созданный экземпляр
         return this.instance;
     }
 
     constructor() {
+        //проверка если NotificationManager уже создан ранее то осатльной код constructor не пройдет (по идее таких ситуаций быть не может)
         if (NotificationManager.instance) {
+            alt.log('Повторный вызов constructor NotificationManager');
             return NotificationManager.instance;
         }
         
         this.webView = null;
         this.isInitialized = false;
         this.isWebViewOpen = false;
-        this.init();
-        
+
+        //сохраняет созданный экземпляр
+        alt.log(`Созданный экземпляр: ${JSON.stringify(this, null, '\t')}`);
         NotificationManager.instance = this;
     }
     
+    async initialize() {
+        // если уже инициализирован, ничего не делает (по идее таких ситуаций быть не может)
+        if (this.isInitialized) {
+            alt.log('NotificationManager уже инициализирован (ПОВТОРНАЯ ПОПЫТКА ВЫЗОВА INITIALIZE)');
+            return;
+        }
+        // запуск инициализации
+        await this.init();
+    }
+
     async init() {
         this.webView = new alt.WebView('http://resource/client/html/index.html');
 
@@ -79,11 +97,10 @@ class NotificationManager {
         }
         else{
             alt.log('Попытка скрыть Notification при isInitialized === null');
+            this.isWebViewOpen = false;
         }
     }
 }
-
-//const notificationManager = new NotificationManager();
 
 // Блокировщик транспорта
 class VehicleBlocker {
@@ -177,10 +194,26 @@ class DeliveryJobClient {
         this.currentOrder = null;   // В будущем класс для конкретного заказа, пока что null что бы не использовать что либо что относится только к конкретному заказау до того как игрок начнет конкретный заказ
 
        // this.vehicleBlocker = new VehicleBlocker(); //для блокировки на разгрузке/погрузке
+        
+        this.initializeNotificationManager();
+
         this.init();
     }
 
+    // метод для инициализации NotificationManager
+    async initializeNotificationManager() {
+        alt.log('1. Инициализация NotificationManager');
+        // получает экземпляр Singleton (создается при первом вызове)
+        const notificationManager = NotificationManager.getInstance();
+        
+        //инициализирует WebView
+        await notificationManager.initialize();
+            
+        alt.log('1. NotificationManager инициализирован через DeliveryJobClient');
+    }
+
     init() { 
+        alt.log('2. Инициализация системы доставки.');
         // получение данных из конфига с сервера
         alt.onServer('initLoadingPoints', (points) => {
             this.config.loadingPoints = points;
