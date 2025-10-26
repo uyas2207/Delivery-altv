@@ -1,89 +1,540 @@
-/*
- * ATTENTION: The "eval" devtool has been used (maybe by default in mode: "development").
- * This devtool is neither made for production nor for readable output files.
- * It uses "eval()" calls to create a separate source file in the browser devtools.
- * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
- * or disable the default devtool with "devtool: false".
- * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
- */
-/******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
-/******/ 	var __webpack_modules__ = ({
-
-/***/ "./client/startClient.js":
-/*!*******************************!*\
-  !*** ./client/startClient.js ***!
-  \*******************************/
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ \"alt-client\");\n/* harmony import */ var natives__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! natives */ \"natives\");\n\n\n\n// Функция для уведомлений GTA\nfunction drawNotification(message, autoHide = false) {\n  natives__WEBPACK_IMPORTED_MODULE_1__.beginTextCommandThefeedPost('STRING');\n  natives__WEBPACK_IMPORTED_MODULE_1__.addTextComponentSubstringPlayerName(message);\n  const notificationId = natives__WEBPACK_IMPORTED_MODULE_1__.endTextCommandThefeedPostTicker(false, false);\n  if (autoHide) {\n    setTimeout(() => {\n      natives__WEBPACK_IMPORTED_MODULE_1__.thefeedRemoveItem(notificationId);\n    }, 3000);\n  }\n}\n\n// Обработчик серверных уведомлений\nalt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('drawNotification', drawNotification);\n\n// Менеджер уведомлений через WebView\nclass NotificationManager {\n  static instance = null;\n  static getInstance() {\n    if (!this.instance) {\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('instance создан в первый раз:');\n      this.instance = new NotificationManager();\n    }\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Передан instance:');\n    return this.instance;\n  }\n  constructor() {\n    if (NotificationManager.instance) {\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Повторный вызов constructor NotificationManager');\n      return NotificationManager.instance;\n    }\n    this.webView = null;\n    this.isInitialized = false;\n    this.isWebViewOpen = false;\n    NotificationManager.instance = this;\n  }\n  async initialize() {\n    if (this.isInitialized) {\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('NotificationManager уже инициализирован');\n      return;\n    }\n    await this.init();\n  }\n  async init() {\n    this.webView = new alt_client__WEBPACK_IMPORTED_MODULE_0__.WebView('http://resource/client/html/index.html');\n    const loadPromise = new Promise(resolve => {\n      this.webView.once('load', () => resolve(true));\n    });\n    const timeoutPromise = new Promise(resolve => {\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.setTimeout(() => resolve(false), 2000);\n    });\n    const isLoaded = await Promise.race([loadPromise, timeoutPromise]);\n    if (isLoaded) {\n      this.isInitialized = true;\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Notification manager initialized SUCCESS');\n    } else {\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Notification manager did not initialize FAILURE (timeout)');\n    }\n  }\n  showPersistent(title, text, id = null) {\n    if (!this.isInitialized) {\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Notification manager не инициализирован');\n      return null;\n    }\n    const notificationId = id || `persistent_${Date.now()}`;\n    this.webView.emit('showPersistentNotification', notificationId, title, text);\n    this.isWebViewOpen = true;\n    return notificationId;\n  }\n  hidePersistent(id) {\n    if (this.isInitialized) {\n      this.webView.emit('hidePersistentNotification', id);\n      this.isWebViewOpen = false;\n    } else {\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Попытка скрыть Notification при isInitialized === null');\n      this.isWebViewOpen = false;\n    }\n  }\n}\n\n// Блокировщик транспорта\nclass VehicleBlocker {\n  async blockVehicleForThreeSeconds(vehicle) {\n    return new Promise(resolve => {\n      if (vehicle && vehicle.valid) {\n        vehicle.frozen = true;\n        setTimeout(() => {\n          vehicle.frozen = false;\n          resolve();\n        }, 3000);\n      } else {\n        resolve();\n        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Ошибка, неправильный resolve');\n      }\n    });\n  }\n}\n\n// Визуальные элементы точки\nclass PointVisuals {\n  constructor(pointConfig) {\n    this.pointConfig = pointConfig;\n    this.position = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(pointConfig.x, pointConfig.y, pointConfig.z);\n    this.marker = null;\n    this.blip = null;\n    this.colshape = null;\n  }\n  create() {\n    if (this.pointConfig.colshapeRadius === undefined) {\n      this.pointConfig.colshapeRadius = 350;\n    }\n    if (this.pointConfig.markerType !== undefined) {\n      this.marker = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Marker(this.pointConfig.markerType, this.position, new alt_client__WEBPACK_IMPORTED_MODULE_0__.RGBA(this.pointConfig.markerColor[0], this.pointConfig.markerColor[1], this.pointConfig.markerColor[2], this.pointConfig.markerColor[3]));\n    }\n    this.blip = new alt_client__WEBPACK_IMPORTED_MODULE_0__.PointBlip(this.position.x, this.position.y, this.position.z);\n    this.blip.sprite = this.pointConfig.blipSprite;\n    this.blip.color = this.pointConfig.blipColor;\n    this.blip.name = this.pointConfig.name;\n    this.blip.shortRange = this.pointConfig.blipshortRange;\n    this.colshape = new alt_client__WEBPACK_IMPORTED_MODULE_0__.ColshapeSphere(this.position.x, this.position.y, this.position.z, this.pointConfig.colshapeRadius);\n    return this;\n  }\n  destroy() {\n    if (this.marker) this.marker.destroy();\n    if (this.blip) this.blip.destroy();\n    if (this.colshape) this.colshape.destroy();\n  }\n}\n\n// Основная система доставки на клиенте\nclass DeliveryJobClient {\n  constructor() {\n    this.config = {\n      unloadingPoints: [],\n      loadingPoints: [],\n      allowedVehicles: [],\n      policeStations: []\n    };\n    this.DeliveryState = null;\n    this.loadingMarkerType = null;\n    this.unloadingMarkerType = null;\n    this.policeColshapes = [];\n    this.state = null;\n    this.currentOrder = null;\n    this.initializeNotificationManager();\n    this.init();\n  }\n  async initializeNotificationManager() {\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('1. Инициализация NotificationManager');\n    const notificationManager = NotificationManager.getInstance();\n    await notificationManager.initialize();\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('1. NotificationManager инициализирован через DeliveryJobClient');\n  }\n  init() {\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('2. Инициализация системы доставки.');\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initLoadingPoints', points => {\n      this.config.loadingPoints = points;\n    });\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initUnloadingPoints', points => {\n      this.config.unloadingPoints = points;\n    });\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initPoliceStations', points => {\n      this.config.policeStations = points;\n      this.createPoliceBlipsColshapes();\n    });\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initAllowedVehicles', VehHash => {\n      this.config.allowedVehicles = VehHash;\n    });\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initDeliveryState', deliveryState => {\n      this.DeliveryState = deliveryState;\n      this.state = this.DeliveryState.SELECTING_POINTS;\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('DeliveryState получен и установлен');\n    });\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:startDelivery', cargoType => {\n      this.startNewOrder(cargoType);\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log(`cargoType ${cargoType}`);\n    });\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:cancelDelivery', () => {\n      this.cancelCurrentOrder();\n    });\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:destroyDeliveryJob', () => {\n      this.destroy();\n    });\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer(\"explode\", () => {\n      const player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;\n      if (player.vehicle) {\n        natives__WEBPACK_IMPORTED_MODULE_1__.addExplosion(player.vehicle.pos.x, player.vehicle.pos.y, player.vehicle.pos.z, 9, 5.0, true, false, 0.0, true);\n      }\n    });\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('entityEnterColshape', this.handleEnterColshapeDeliveryJobClient.bind(this));\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('entityLeaveColshape', this.handleLeaveColshapeDeliveryJobClient.bind(this));\n  }\n  createPoliceBlipsColshapes() {\n    this.config.policeStations.forEach((station, index) => {\n      const policeVisuals = new PointVisuals(station).create();\n      policeVisuals.colshape.isPoliceZone = true;\n      policeVisuals.colshape.policeStationId = index;\n      this.policeColshapes.push(policeVisuals.colshape);\n    });\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.log(`Создано ${this.config.policeStations.length} полицейских участков`);\n  }\n  startNewOrder(cargoType) {\n    if (this.currentOrder) {\n      this.cancelCurrentOrder();\n    }\n    this.currentOrder = new DeliveryOrder(cargoType, this.config, this.policeColshapes, this.DeliveryState);\n    this.currentOrder.deliveryJobClient = this;\n    this.currentOrder.start();\n  }\n  cancelCurrentOrder() {\n    if (this.currentOrder) {\n      this.currentOrder.cancel();\n      this.currentOrder = null;\n    }\n  }\n  handleEnterColshapeDeliveryJobClient(colshape, entity) {\n    const player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;\n    if (entity instanceof alt_client__WEBPACK_IMPORTED_MODULE_0__.Player) {\n      if (!player.vehicle) return;\n    }\n    if (this.currentOrder !== null) {\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log(`Вошел в колшейп`);\n      this.currentOrder.handleColshapeEnterDeliveryOrder(colshape);\n    }\n  }\n  handleLeaveColshapeDeliveryJobClient(colshape, entity) {\n    if (NotificationManager.getInstance().isWebViewOpen) {\n      NotificationManager.getInstance().hidePersistent();\n      this.currentOrder.handleColshapeLeave(colshape, entity);\n    }\n  }\n}\n\n// Конкретный заказ на клиенте\nclass DeliveryOrder {\n  constructor(cargoType, config, policeColshapes, DeliveryState) {\n    this.cargoType = cargoType;\n    this.config = config;\n    this.policeColshapes = policeColshapes;\n    this.DeliveryState = DeliveryState;\n    this.state = this.DeliveryState.SELECTING_POINTS;\n    this.loadingPoint = null;\n    this.unloadingPoint = null;\n    this.loadedVehId = null;\n    this.deliveryJobClient = null;\n    this.pointBaseType = {\n      LOADING: 'loading',\n      UNLOADING: 'unloading'\n    };\n  }\n  async start() {\n    await this.selectPoints();\n    this.createLoadingPoint();\n    this.state = this.DeliveryState.WAITING_FOR_LOADING;\n  }\n  selectPoints() {\n    return new Promise(resolve => {\n      this.loadingPoint = this.config.loadingPoints[Math.floor(Math.random() * this.config.loadingPoints.length)];\n      this.unloadingPoint = this.config.unloadingPoints[Math.floor(Math.random() * this.config.unloadingPoints.length)];\n      if (this.cargoType === 'Illegal') {\n        this.distanceFromPoliceStations();\n      }\n      resolve();\n    });\n  }\n  async distanceFromPoliceStations() {\n    const minDistance = 350;\n    const unloadingPos = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(this.unloadingPoint.x, this.unloadingPoint.y, this.unloadingPoint.z);\n    let isTooClose = this.config.policeStations.some(station => {\n      const stationPos = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(station.x, station.y, station.z);\n      const distance = unloadingPos.distanceTo(stationPos);\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log(`Расстояние до полицейского участка ${station.name}: ${distance}`);\n      return distance < minDistance;\n    });\n    if (isTooClose) {\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log(`Точка разгрузки слишком близко к полиции, выбираентся новая...`);\n      this.unloadingPoint = this.config.unloadingPoints[Math.floor(Math.random() * this.config.unloadingPoints.length)];\n      this.distanceFromPoliceStations();\n      await new Promise(resolve => alt_client__WEBPACK_IMPORTED_MODULE_0__.setTimeout(resolve, 10));\n    }\n  }\n  createLoadingPoint() {\n    const pointVisuals = new PointVisuals(this.loadingPoint).create();\n    this.loadingPoint = new PointBase(this.pointBaseType.LOADING, this, pointVisuals);\n  }\n  createUnloadingPoint() {\n    const pointVisuals = new PointVisuals(this.unloadingPoint).create();\n    this.unloadingPoint = new PointBase(this.pointBaseType.UNLOADING, this, pointVisuals);\n  }\n  handleColshapeEnterDeliveryOrder(colshape) {\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.log(`alt.Player.local.vehicle.id: ${alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle.id}`);\n    if (!this.loadingPoint || !this.unloadingPoint || !this.policeColshapes) return;\n    if (this.state === this.DeliveryState.WAITING_FOR_LOADING) {\n      if (colshape === this.loadingPoint.pointVisuals.colshape) {\n        this.loadingPoint.PointLoad(colshape, alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle);\n      }\n    }\n    if (this.state === this.DeliveryState.DELIVERING) {\n      if (colshape === this.unloadingPoint.pointVisuals.colshape) {\n        this.unloadingPoint.PointUnload(colshape, alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle);\n      }\n    }\n    if (colshape.isPoliceZone) {\n      if (this.cargoType === 'Illegal' && alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle.id === this.loadedVehId) {\n        alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:failDelivery');\n      }\n    }\n  }\n  handleColshapeLeave(colshape) {\n    if (this.state === this.DeliveryState.WAITING_FOR_LOADING && this.loadingPoint) {\n      this.loadingPoint.cleanup();\n    }\n    if (this.state === this.DeliveryState.DELIVERING && this.unloadingPoint) {\n      this.unloadingPoint.cleanup();\n    }\n  }\n  async executeLoading(vehicle) {\n    const vehicleBlocker = new VehicleBlocker();\n    drawNotification('Начало погрузки...', true);\n    await vehicleBlocker.blockVehicleForThreeSeconds(vehicle);\n    this.loadedVehId = vehicle.id;\n    this.loadingPoint.pointVisuals.destroy();\n    this.createUnloadingPoint();\n    this.state = this.DeliveryState.DELIVERING;\n    drawNotification(`Погрузка завершена! Груз: ${this.cargoType}`);\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:startLoading', this.loadedVehId);\n  }\n  async executeUnloading(vehicle) {\n    const vehicleBlocker = new VehicleBlocker();\n    drawNotification('Начало разгрузки...', true);\n    await vehicleBlocker.blockVehicleForThreeSeconds(vehicle);\n    this.loadedVehId = null;\n    this.unloadingPoint.pointVisuals.destroy();\n    this.state = this.DeliveryState.EMPTY;\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:completeDelivery');\n    drawNotification(`Доставка завершена! Груз: ${this.cargoType}`);\n    this.deliveryJobClient.currentOrder = null;\n  }\n  cancel() {\n    if (this.state === this.DeliveryState.WAITING_FOR_LOADING) {\n      this.loadingPoint.cleanup();\n      this.loadingPoint.pointVisuals.destroy();\n      this.state = this.DeliveryState.EMPTY;\n    }\n    if (this.state === this.DeliveryState.DELIVERING) {\n      this.unloadingPoint.cleanup();\n      this.unloadingPoint.pointVisuals.destroy();\n      this.loadedVehId = null;\n      this.state = this.DeliveryState.EMPTY;\n    }\n    if (this.deliveryJobClient) {\n      this.deliveryJobClient.currentOrder = null;\n    }\n  }\n}\n\n// Класс точки с логикой\nclass PointBase {\n  constructor(type, deliveryOrder, pointVisuals) {\n    this.type = type;\n    this.deliveryOrder = deliveryOrder;\n    this.pointVisuals = pointVisuals;\n    this.keyPressHandler = null;\n  }\n  PointLoad(colshape, entity) {\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.log(`PointLoad`);\n    const player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;\n    if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) {\n      drawNotification('Транспорт не подходит для перевозки');\n      return;\n    }\n    NotificationManager.getInstance().showPersistent(\"Погрузка\", \"Нажмите <span class='notification-key'>E</span> чтобы начать погрузку\");\n    if (this.keyPressHandler) {\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.off('keydown', this.keyPressHandler);\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Удален обработчик 1');\n    }\n    this.keyPressHandler = key => {\n      if (key === 69 && NotificationManager.getInstance().isWebViewOpen && this.pointVisuals.position.distanceTo(player.pos) < 10) {\n        this.cleanup();\n        NotificationManager.getInstance().hidePersistent();\n        if (!player.vehicle) {\n          drawNotification('Вы не находитесь в транспорте');\n          return;\n        }\n        if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) {\n          alt_client__WEBPACK_IMPORTED_MODULE_0__.log(`Vehicle ${player.vehicle.model} is not allowed`);\n          drawNotification('Неправильное авто');\n          return;\n        }\n        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Началась погрузка');\n        this.deliveryOrder.executeLoading(player.vehicle);\n      }\n    };\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('keydown', this.keyPressHandler);\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Создан обработчик погрузки');\n  }\n  PointUnload(colshape, entity) {\n    const player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;\n    if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {\n      drawNotification('Это не тот транспорт, в который был загружен груз');\n      return;\n    }\n    NotificationManager.getInstance().showPersistent(\"Разгрузка\", \"Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку\");\n    this.keyPressHandler = key => {\n      if (key === 69 && NotificationManager.getInstance().isWebViewOpen && this.pointVisuals.position.distanceTo(player.pos) < 15) {\n        this.cleanup();\n        NotificationManager.getInstance().hidePersistent();\n        if (!player.vehicle) {\n          drawNotification('Вы не находитесь в транспорте');\n          return;\n        }\n        if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {\n          drawNotification('Это не тот транспорт, в который был загружен груз');\n          return;\n        }\n        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Началась разгрузка');\n        this.deliveryOrder.executeUnloading(player.vehicle);\n      }\n    };\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('keydown', this.keyPressHandler);\n    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Создан обработчик разгрузки');\n  }\n  cleanup() {\n    if (this.keyPressHandler) {\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.off('keydown', this.keyPressHandler);\n      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Удален обработчик');\n      this.keyPressHandler = null;\n    }\n  }\n}\n\n// Запуск системы\nnew DeliveryJobClient();\nalt_client__WEBPACK_IMPORTED_MODULE_0__.log('=== Cargo Delivery Client Module Loaded ===');\n\n//# sourceURL=webpack://altv-delivery-mod/./client/startClient.js?\n}");
-
-/***/ }),
+import * as __WEBPACK_EXTERNAL_MODULE_alt_client_680395b4__ from "alt-client";
+import * as __WEBPACK_EXTERNAL_MODULE_natives__ from "natives";
+/******/ var __webpack_modules__ = ({
 
 /***/ "alt-client":
-/*!**********************!*\
-  !*** external "alt" ***!
-  \**********************/
+/*!*****************************!*\
+  !*** external "alt-client" ***!
+  \*****************************/
 /***/ ((module) => {
 
-module.exports = alt;
+module.exports = __WEBPACK_EXTERNAL_MODULE_alt_client_680395b4__;
 
 /***/ }),
 
 /***/ "natives":
-/*!*************************!*\
-  !*** external "native" ***!
-  \*************************/
+/*!**************************!*\
+  !*** external "natives" ***!
+  \**************************/
 /***/ ((module) => {
 
-module.exports = native;
+module.exports = __WEBPACK_EXTERNAL_MODULE_natives__;
 
 /***/ })
 
-/******/ 	});
+/******/ });
 /************************************************************************/
-/******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
-/******/ 	
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 		if (cachedModule !== undefined) {
-/******/ 			return cachedModule.exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
-/******/ 			// no module.loaded needed
-/******/ 			exports: {}
-/******/ 		};
-/******/ 	
-/******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
-/******/ 	
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
+/******/ // The module cache
+/******/ var __webpack_module_cache__ = {};
+/******/ 
+/******/ // The require function
+/******/ function __webpack_require__(moduleId) {
+/******/ 	// Check if module is in cache
+/******/ 	var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 	if (cachedModule !== undefined) {
+/******/ 		return cachedModule.exports;
 /******/ 	}
-/******/ 	
+/******/ 	// Create a new module (and put it into the cache)
+/******/ 	var module = __webpack_module_cache__[moduleId] = {
+/******/ 		// no module.id needed
+/******/ 		// no module.loaded needed
+/******/ 		exports: {}
+/******/ 	};
+/******/ 
+/******/ 	// Execute the module function
+/******/ 	__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 
+/******/ 	// Return the exports of the module
+/******/ 	return module.exports;
+/******/ }
+/******/ 
 /************************************************************************/
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__webpack_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
+/******/ /* webpack/runtime/make namespace object */
+/******/ (() => {
+/******/ 	// define __esModule on exports
+/******/ 	__webpack_require__.r = (exports) => {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
+/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/ })();
+/******/ 
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module can't be inlined because the eval devtool is used.
-/******/ 	var __webpack_exports__ = __webpack_require__("./client/startClient.js");
-/******/ 	
-/******/ })()
-;
+var __webpack_exports__ = {};
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
+(() => {
+/*!*******************************!*\
+  !*** ./client/startClient.js ***!
+  \*******************************/
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ "alt-client");
+/* harmony import */ var natives__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! natives */ "natives");
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
+
+
+// Функция для уведомлений GTA
+function drawNotification(message) {
+  var autoHide = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  natives__WEBPACK_IMPORTED_MODULE_1__.beginTextCommandThefeedPost('STRING');
+  natives__WEBPACK_IMPORTED_MODULE_1__.addTextComponentSubstringPlayerName(message);
+  var notificationId = natives__WEBPACK_IMPORTED_MODULE_1__.endTextCommandThefeedPostTicker(false, false);
+  if (autoHide) {
+    setTimeout(() => {
+      natives__WEBPACK_IMPORTED_MODULE_1__.thefeedRemoveItem(notificationId);
+    }, 3000);
+  }
+}
+
+// Обработчик серверных уведомлений
+alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('drawNotification', drawNotification);
+
+// Менеджер уведомлений через WebView
+class NotificationManager {
+  static getInstance() {
+    if (!this.instance) {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('instance создан в первый раз:');
+      this.instance = new NotificationManager();
+    }
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Передан instance:');
+    return this.instance;
+  }
+  constructor() {
+    if (NotificationManager.instance) {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Повторный вызов constructor NotificationManager');
+      return NotificationManager.instance;
+    }
+    this.webView = null;
+    this.isInitialized = false;
+    this.isWebViewOpen = false;
+    NotificationManager.instance = this;
+  }
+  initialize() {
+    var _this = this;
+    return _asyncToGenerator(function* () {
+      if (_this.isInitialized) {
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('NotificationManager уже инициализирован');
+        return;
+      }
+      yield _this.init();
+    })();
+  }
+  init() {
+    var _this2 = this;
+    return _asyncToGenerator(function* () {
+      _this2.webView = new alt_client__WEBPACK_IMPORTED_MODULE_0__.WebView('http://resource/client/html/index.html');
+      var loadPromise = new Promise(resolve => {
+        _this2.webView.once('load', () => resolve(true));
+      });
+      var timeoutPromise = new Promise(resolve => {
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.setTimeout(() => resolve(false), 2000);
+      });
+      var isLoaded = yield Promise.race([loadPromise, timeoutPromise]);
+      if (isLoaded) {
+        _this2.isInitialized = true;
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Notification manager initialized SUCCESS');
+      } else {
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Notification manager did not initialize FAILURE (timeout)');
+      }
+    })();
+  }
+  showPersistent(title, text) {
+    var id = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+    if (!this.isInitialized) {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Notification manager не инициализирован');
+      return null;
+    }
+    var notificationId = id || "persistent_".concat(Date.now());
+    this.webView.emit('showPersistentNotification', notificationId, title, text);
+    this.isWebViewOpen = true;
+    return notificationId;
+  }
+  hidePersistent(id) {
+    if (this.isInitialized) {
+      this.webView.emit('hidePersistentNotification', id);
+      this.isWebViewOpen = false;
+    } else {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Попытка скрыть Notification при isInitialized === null');
+      this.isWebViewOpen = false;
+    }
+  }
+}
+
+// Блокировщик транспорта
+_defineProperty(NotificationManager, "instance", null);
+class VehicleBlocker {
+  blockVehicleForThreeSeconds(vehicle) {
+    return _asyncToGenerator(function* () {
+      return new Promise(resolve => {
+        if (vehicle && vehicle.valid) {
+          vehicle.frozen = true;
+          setTimeout(() => {
+            vehicle.frozen = false;
+            resolve();
+          }, 3000);
+        } else {
+          resolve();
+          alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Ошибка, неправильный resolve');
+        }
+      });
+    })();
+  }
+}
+
+// Визуальные элементы точки
+class PointVisuals {
+  constructor(pointConfig) {
+    this.pointConfig = pointConfig;
+    this.position = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(pointConfig.x, pointConfig.y, pointConfig.z);
+    this.marker = null;
+    this.blip = null;
+    this.colshape = null;
+  }
+  create() {
+    if (this.pointConfig.colshapeRadius === undefined) {
+      this.pointConfig.colshapeRadius = 350;
+    }
+    if (this.pointConfig.markerType !== undefined) {
+      this.marker = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Marker(this.pointConfig.markerType, this.position, new alt_client__WEBPACK_IMPORTED_MODULE_0__.RGBA(this.pointConfig.markerColor[0], this.pointConfig.markerColor[1], this.pointConfig.markerColor[2], this.pointConfig.markerColor[3]));
+    }
+    this.blip = new alt_client__WEBPACK_IMPORTED_MODULE_0__.PointBlip(this.position.x, this.position.y, this.position.z);
+    this.blip.sprite = this.pointConfig.blipSprite;
+    this.blip.color = this.pointConfig.blipColor;
+    this.blip.name = this.pointConfig.name;
+    this.blip.shortRange = this.pointConfig.blipshortRange;
+    this.colshape = new alt_client__WEBPACK_IMPORTED_MODULE_0__.ColshapeSphere(this.position.x, this.position.y, this.position.z, this.pointConfig.colshapeRadius);
+    return this;
+  }
+  destroy() {
+    if (this.marker) this.marker.destroy();
+    if (this.blip) this.blip.destroy();
+    if (this.colshape) this.colshape.destroy();
+  }
+}
+
+// Основная система доставки на клиенте
+class DeliveryJobClient {
+  constructor() {
+    this.config = {
+      unloadingPoints: [],
+      loadingPoints: [],
+      allowedVehicles: [],
+      policeStations: []
+    };
+    this.DeliveryState = null;
+    this.loadingMarkerType = null;
+    this.unloadingMarkerType = null;
+    this.policeColshapes = [];
+    this.state = null;
+    this.currentOrder = null;
+    this.initializeNotificationManager();
+    this.init();
+  }
+  initializeNotificationManager() {
+    return _asyncToGenerator(function* () {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('1. Инициализация NotificationManager');
+      var notificationManager = NotificationManager.getInstance();
+      yield notificationManager.initialize();
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('1. NotificationManager инициализирован через DeliveryJobClient');
+    })();
+  }
+  init() {
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('2. Инициализация системы доставки.');
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initLoadingPoints', points => {
+      this.config.loadingPoints = points;
+    });
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initUnloadingPoints', points => {
+      this.config.unloadingPoints = points;
+    });
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initPoliceStations', points => {
+      this.config.policeStations = points;
+      this.createPoliceBlipsColshapes();
+    });
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initAllowedVehicles', VehHash => {
+      this.config.allowedVehicles = VehHash;
+    });
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initDeliveryState', deliveryState => {
+      this.DeliveryState = deliveryState;
+      this.state = this.DeliveryState.SELECTING_POINTS;
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('DeliveryState получен и установлен');
+    });
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:startDelivery', cargoType => {
+      this.startNewOrder(cargoType);
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log("cargoType ".concat(cargoType));
+    });
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:cancelDelivery', () => {
+      this.cancelCurrentOrder();
+    });
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:destroyDeliveryJob', () => {
+      this.destroy();
+    });
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer("explode", () => {
+      var player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;
+      if (player.vehicle) {
+        natives__WEBPACK_IMPORTED_MODULE_1__.addExplosion(player.vehicle.pos.x, player.vehicle.pos.y, player.vehicle.pos.z, 9, 5.0, true, false, 0.0, true);
+      }
+    });
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('entityEnterColshape', this.handleEnterColshapeDeliveryJobClient.bind(this));
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('entityLeaveColshape', this.handleLeaveColshapeDeliveryJobClient.bind(this));
+  }
+  createPoliceBlipsColshapes() {
+    this.config.policeStations.forEach((station, index) => {
+      var policeVisuals = new PointVisuals(station).create();
+      policeVisuals.colshape.isPoliceZone = true;
+      policeVisuals.colshape.policeStationId = index;
+      this.policeColshapes.push(policeVisuals.colshape);
+    });
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0421\u043E\u0437\u0434\u0430\u043D\u043E ".concat(this.config.policeStations.length, " \u043F\u043E\u043B\u0438\u0446\u0435\u0439\u0441\u043A\u0438\u0445 \u0443\u0447\u0430\u0441\u0442\u043A\u043E\u0432"));
+  }
+  startNewOrder(cargoType) {
+    if (this.currentOrder) {
+      this.cancelCurrentOrder();
+    }
+    this.currentOrder = new DeliveryOrder(cargoType, this.config, this.policeColshapes, this.DeliveryState);
+    this.currentOrder.deliveryJobClient = this;
+    this.currentOrder.start();
+  }
+  cancelCurrentOrder() {
+    if (this.currentOrder) {
+      this.currentOrder.cancel();
+      this.currentOrder = null;
+    }
+  }
+  handleEnterColshapeDeliveryJobClient(colshape, entity) {
+    var player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;
+    if (entity instanceof alt_client__WEBPACK_IMPORTED_MODULE_0__.Player) {
+      if (!player.vehicle) return;
+    }
+    if (this.currentOrder !== null) {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0412\u043E\u0448\u0435\u043B \u0432 \u043A\u043E\u043B\u0448\u0435\u0439\u043F");
+      this.currentOrder.handleColshapeEnterDeliveryOrder(colshape);
+    }
+  }
+  handleLeaveColshapeDeliveryJobClient(colshape, entity) {
+    if (NotificationManager.getInstance().isWebViewOpen) {
+      NotificationManager.getInstance().hidePersistent();
+      this.currentOrder.handleColshapeLeave(colshape, entity);
+    }
+  }
+}
+
+// Конкретный заказ на клиенте
+class DeliveryOrder {
+  constructor(cargoType, config, policeColshapes, DeliveryState) {
+    this.cargoType = cargoType;
+    this.config = config;
+    this.policeColshapes = policeColshapes;
+    this.DeliveryState = DeliveryState;
+    this.state = this.DeliveryState.SELECTING_POINTS;
+    this.loadingPoint = null;
+    this.unloadingPoint = null;
+    this.loadedVehId = null;
+    this.deliveryJobClient = null;
+    this.pointBaseType = {
+      LOADING: 'loading',
+      UNLOADING: 'unloading'
+    };
+  }
+  start() {
+    var _this3 = this;
+    return _asyncToGenerator(function* () {
+      yield _this3.selectPoints();
+      _this3.createLoadingPoint();
+      _this3.state = _this3.DeliveryState.WAITING_FOR_LOADING;
+    })();
+  }
+  selectPoints() {
+    return new Promise(resolve => {
+      this.loadingPoint = this.config.loadingPoints[Math.floor(Math.random() * this.config.loadingPoints.length)];
+      this.unloadingPoint = this.config.unloadingPoints[Math.floor(Math.random() * this.config.unloadingPoints.length)];
+      if (this.cargoType === 'Illegal') {
+        this.distanceFromPoliceStations();
+      }
+      resolve();
+    });
+  }
+  distanceFromPoliceStations() {
+    var _this4 = this;
+    return _asyncToGenerator(function* () {
+      var minDistance = 350;
+      var unloadingPos = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(_this4.unloadingPoint.x, _this4.unloadingPoint.y, _this4.unloadingPoint.z);
+      var isTooClose = _this4.config.policeStations.some(station => {
+        var stationPos = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(station.x, station.y, station.z);
+        var distance = unloadingPos.distanceTo(stationPos);
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0420\u0430\u0441\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0434\u043E \u043F\u043E\u043B\u0438\u0446\u0435\u0439\u0441\u043A\u043E\u0433\u043E \u0443\u0447\u0430\u0441\u0442\u043A\u0430 ".concat(station.name, ": ").concat(distance));
+        return distance < minDistance;
+      });
+      if (isTooClose) {
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0422\u043E\u0447\u043A\u0430 \u0440\u0430\u0437\u0433\u0440\u0443\u0437\u043A\u0438 \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0431\u043B\u0438\u0437\u043A\u043E \u043A \u043F\u043E\u043B\u0438\u0446\u0438\u0438, \u0432\u044B\u0431\u0438\u0440\u0430\u0435\u043D\u0442\u0441\u044F \u043D\u043E\u0432\u0430\u044F...");
+        _this4.unloadingPoint = _this4.config.unloadingPoints[Math.floor(Math.random() * _this4.config.unloadingPoints.length)];
+        _this4.distanceFromPoliceStations();
+        yield new Promise(resolve => alt_client__WEBPACK_IMPORTED_MODULE_0__.setTimeout(resolve, 10));
+      }
+    })();
+  }
+  createLoadingPoint() {
+    var pointVisuals = new PointVisuals(this.loadingPoint).create();
+    this.loadingPoint = new PointBase(this.pointBaseType.LOADING, this, pointVisuals);
+  }
+  createUnloadingPoint() {
+    var pointVisuals = new PointVisuals(this.unloadingPoint).create();
+    this.unloadingPoint = new PointBase(this.pointBaseType.UNLOADING, this, pointVisuals);
+  }
+  handleColshapeEnterDeliveryOrder(colshape) {
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("alt.Player.local.vehicle.id: ".concat(alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle.id));
+    if (!this.loadingPoint || !this.unloadingPoint || !this.policeColshapes) return;
+    if (this.state === this.DeliveryState.WAITING_FOR_LOADING) {
+      if (colshape === this.loadingPoint.pointVisuals.colshape) {
+        this.loadingPoint.PointLoad(colshape, alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle);
+      }
+    }
+    if (this.state === this.DeliveryState.DELIVERING) {
+      if (colshape === this.unloadingPoint.pointVisuals.colshape) {
+        this.unloadingPoint.PointUnload(colshape, alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle);
+      }
+    }
+    if (colshape.isPoliceZone) {
+      if (this.cargoType === 'Illegal' && alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle.id === this.loadedVehId) {
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:failDelivery');
+      }
+    }
+  }
+  handleColshapeLeave(colshape) {
+    if (this.state === this.DeliveryState.WAITING_FOR_LOADING && this.loadingPoint) {
+      this.loadingPoint.cleanup();
+    }
+    if (this.state === this.DeliveryState.DELIVERING && this.unloadingPoint) {
+      this.unloadingPoint.cleanup();
+    }
+  }
+  executeLoading(vehicle) {
+    var _this5 = this;
+    return _asyncToGenerator(function* () {
+      var vehicleBlocker = new VehicleBlocker();
+      drawNotification('Начало погрузки...', true);
+      yield vehicleBlocker.blockVehicleForThreeSeconds(vehicle);
+      _this5.loadedVehId = vehicle.id;
+      _this5.loadingPoint.pointVisuals.destroy();
+      _this5.createUnloadingPoint();
+      _this5.state = _this5.DeliveryState.DELIVERING;
+      drawNotification("\u041F\u043E\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430! \u0413\u0440\u0443\u0437: ".concat(_this5.cargoType));
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:startLoading', _this5.loadedVehId);
+    })();
+  }
+  executeUnloading(vehicle) {
+    var _this6 = this;
+    return _asyncToGenerator(function* () {
+      var vehicleBlocker = new VehicleBlocker();
+      drawNotification('Начало разгрузки...', true);
+      yield vehicleBlocker.blockVehicleForThreeSeconds(vehicle);
+      _this6.loadedVehId = null;
+      _this6.unloadingPoint.pointVisuals.destroy();
+      _this6.state = _this6.DeliveryState.EMPTY;
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:completeDelivery');
+      drawNotification("\u0414\u043E\u0441\u0442\u0430\u0432\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430! \u0413\u0440\u0443\u0437: ".concat(_this6.cargoType));
+      _this6.deliveryJobClient.currentOrder = null;
+    })();
+  }
+  cancel() {
+    if (this.state === this.DeliveryState.WAITING_FOR_LOADING) {
+      this.loadingPoint.cleanup();
+      this.loadingPoint.pointVisuals.destroy();
+      this.state = this.DeliveryState.EMPTY;
+    }
+    if (this.state === this.DeliveryState.DELIVERING) {
+      this.unloadingPoint.cleanup();
+      this.unloadingPoint.pointVisuals.destroy();
+      this.loadedVehId = null;
+      this.state = this.DeliveryState.EMPTY;
+    }
+    if (this.deliveryJobClient) {
+      this.deliveryJobClient.currentOrder = null;
+    }
+  }
+}
+
+// Класс точки с логикой
+class PointBase {
+  constructor(type, deliveryOrder, pointVisuals) {
+    this.type = type;
+    this.deliveryOrder = deliveryOrder;
+    this.pointVisuals = pointVisuals;
+    this.keyPressHandler = null;
+  }
+  PointLoad(colshape, entity) {
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("PointLoad");
+    var player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;
+    if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) {
+      drawNotification('Транспорт не подходит для перевозки');
+      return;
+    }
+    NotificationManager.getInstance().showPersistent("Погрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать погрузку");
+    if (this.keyPressHandler) {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.off('keydown', this.keyPressHandler);
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Удален обработчик 1');
+    }
+    this.keyPressHandler = key => {
+      if (key === 69 && NotificationManager.getInstance().isWebViewOpen && this.pointVisuals.position.distanceTo(player.pos) < 10) {
+        this.cleanup();
+        NotificationManager.getInstance().hidePersistent();
+        if (!player.vehicle) {
+          drawNotification('Вы не находитесь в транспорте');
+          return;
+        }
+        if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) {
+          alt_client__WEBPACK_IMPORTED_MODULE_0__.log("Vehicle ".concat(player.vehicle.model, " is not allowed"));
+          drawNotification('Неправильное авто');
+          return;
+        }
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Началась погрузка');
+        this.deliveryOrder.executeLoading(player.vehicle);
+      }
+    };
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('keydown', this.keyPressHandler);
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Создан обработчик погрузки');
+  }
+  PointUnload(colshape, entity) {
+    var player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;
+    if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {
+      drawNotification('Это не тот транспорт, в который был загружен груз');
+      return;
+    }
+    NotificationManager.getInstance().showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
+    this.keyPressHandler = key => {
+      if (key === 69 && NotificationManager.getInstance().isWebViewOpen && this.pointVisuals.position.distanceTo(player.pos) < 15) {
+        this.cleanup();
+        NotificationManager.getInstance().hidePersistent();
+        if (!player.vehicle) {
+          drawNotification('Вы не находитесь в транспорте');
+          return;
+        }
+        if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {
+          drawNotification('Это не тот транспорт, в который был загружен груз');
+          return;
+        }
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Началась разгрузка');
+        this.deliveryOrder.executeUnloading(player.vehicle);
+      }
+    };
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('keydown', this.keyPressHandler);
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Создан обработчик разгрузки');
+  }
+  cleanup() {
+    if (this.keyPressHandler) {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.off('keydown', this.keyPressHandler);
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Удален обработчик');
+      this.keyPressHandler = null;
+    }
+  }
+}
+
+// Запуск системы
+new DeliveryJobClient();
+alt_client__WEBPACK_IMPORTED_MODULE_0__.log('=== Cargo Delivery Client Module Loaded ===');
+})();
+

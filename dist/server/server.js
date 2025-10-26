@@ -1,14 +1,6 @@
-/*
- * ATTENTION: The "eval" devtool has been used (maybe by default in mode: "development").
- * This devtool is neither made for production nor for readable output files.
- * It uses "eval()" calls to create a separate source file in the browser devtools.
- * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
- * or disable the default devtool with "devtool: false".
- * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
- */
-import * as __WEBPACK_EXTERNAL_MODULE_alt__ from "alt";
-import * as __WEBPACK_EXTERNAL_MODULE_node_fs_75ed2103__ from "node:fs";
-import * as __WEBPACK_EXTERNAL_MODULE_node_path_02319fef__ from "node:path";
+import * as __WEBPACK_EXTERNAL_MODULE_alt_server_bcde031e__ from "alt-server";
+import { createRequire as __WEBPACK_EXTERNAL_createRequire } from "node:module";
+const __WEBPACK_EXTERNAL_createRequire_require = __WEBPACK_EXTERNAL_createRequire(import.meta.url);
 /******/ var __webpack_modules__ = ({
 
 /***/ "./server/cargo/CargoBase.js":
@@ -17,7 +9,41 @@ import * as __WEBPACK_EXTERNAL_MODULE_node_path_02319fef__ from "node:path";
   \***********************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
-eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (__WEBPACK_DEFAULT_EXPORT__)\n/* harmony export */ });\n/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ \"alt-server\");\n//для работы функицй alt.\n\nclass CargoBase {\n  constructor(type, reward, reason) {\n    this.type = type;\n    this.reward = reward;\n    this.reason = reason;\n  }\n  async onDamage(vehicle, attacker, deliveryJob) {\n    // базовая логика - без обработки урона\n\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.log(`CargoBase авто получило урон после проверок`);\n    return false; //урон не обработан\n  }\n  //общая логика для успешного завершения\n  onSuccessfulDelivery(player) {\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'drawNotification', `+${this.reward}\\$`);\n  }\n  //общая логика для провала\n  onDeliveryFailed(player) {\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'drawNotification', `${this.reason}`);\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'drawNotification', 'заказ отменен!');\n  }\n}\n//передается CargoBase для файлов которые будут использовать import CargoBase from './CargoBase.js'\n/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (CargoBase); // default export\n\n//# sourceURL=webpack://altv-delivery-mod/./server/cargo/CargoBase.js?\n}");
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+//для работы функицй alt.
+
+class CargoBase {
+  constructor(type, reward, reason) {
+    this.type = type;
+    this.reward = reward;
+    this.reason = reason;
+  }
+  onDamage(vehicle, attacker, deliveryJob) {
+    return _asyncToGenerator(function* () {
+      // базовая логика - без обработки урона
+
+      alt_server__WEBPACK_IMPORTED_MODULE_0__.log("CargoBase \u0430\u0432\u0442\u043E \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E \u0443\u0440\u043E\u043D \u043F\u043E\u0441\u043B\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u043E\u043A");
+      return false; //урон не обработан
+    })();
+  }
+  //общая логика для успешного завершения
+  onSuccessfulDelivery(player) {
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'drawNotification', "+".concat(this.reward, "$"));
+  }
+  //общая логика для провала
+  onDeliveryFailed(player) {
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'drawNotification', "".concat(this.reason));
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'drawNotification', 'заказ отменен!');
+  }
+}
+//передается CargoBase для файлов которые будут использовать import CargoBase from './CargoBase.js'
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (CargoBase); // default export
 
 /***/ }),
 
@@ -27,7 +53,22 @@ eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpa
   \*************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
-eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   CommonCargo: () => (/* binding */ CommonCargo)\n/* harmony export */ });\n/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ \"alt-server\");\n/* harmony import */ var _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./CargoBase.js */ \"./server/cargo/CargoBase.js\");\n//для работы функицй alt.\n//в этом файле такие функции не используются но вдруг в будущем будет добавлена еще логика и возникнет необходимость в altv функционале\n\n//Берется базовая логика типа груза из shared\\cargo /CargoBase.js\n\nclass CommonCargo extends _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"] {\n  constructor() {\n    super('Common', 1000, null); //type, reward, reason\n  }\n}\n\n//# sourceURL=webpack://altv-delivery-mod/./server/cargo/CommonCargo.js?\n}");
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   CommonCargo: () => (/* binding */ CommonCargo)
+/* harmony export */ });
+/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
+/* harmony import */ var _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./CargoBase.js */ "./server/cargo/CargoBase.js");
+//для работы функицй alt.
+//в этом файле такие функции не используются но вдруг в будущем будет добавлена еще логика и возникнет необходимость в altv функционале
+
+//Берется базовая логика типа груза из shared\cargo /CargoBase.js
+
+class CommonCargo extends _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__["default"] {
+  constructor() {
+    super('Common', 1000, null); //type, reward, reason
+  }
+}
 
 /***/ }),
 
@@ -37,7 +78,27 @@ eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpa
   \********************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
-eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   DeliveryState: () => (/* binding */ DeliveryState)\n/* harmony export */ });\nconst DeliveryState = {\n  EMPTY: 'empty',\n  //'empty'\t\t\tнет активного заказа (провален или выполнен)\n  SELECTING_POINTS: 'selecting_points',\n  ///'selecting_points'\tизначальное состояние при старте системы на клиенте\n  WAITING_FOR_LOADING: 'waiting_for_loading',\n  //'waiting_for_loading'\tпосле старта доставки (когда активна точка погрузки)\n  DELIVERING: 'delivering',\n  //'delivering'\t\tс момента погрузки до момента разгрузки (активна точка разгрузки)\n  ACTIVE: 'active',\n  //используется только на сервере, показывает что заказ только что начался\n  COMPLETED: 'completed',\n  // используется только на сервере без функционала (нужно для деабага)\n  CANCELLED: 'cancelled',\n  // используется только на сервере без функционала (нужно для деабага)\n  FAILED: 'failed' // используется только на сервере без функционала (нужно для деабага)\n};\n\n//# sourceURL=webpack://altv-delivery-mod/./server/cargo/Consts.js?\n}");
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   DeliveryState: () => (/* binding */ DeliveryState)
+/* harmony export */ });
+var DeliveryState = {
+  EMPTY: 'empty',
+  //'empty'			нет активного заказа (провален или выполнен)
+  SELECTING_POINTS: 'selecting_points',
+  ///'selecting_points'	изначальное состояние при старте системы на клиенте
+  WAITING_FOR_LOADING: 'waiting_for_loading',
+  //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
+  DELIVERING: 'delivering',
+  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+  ACTIVE: 'active',
+  //используется только на сервере, показывает что заказ только что начался
+  COMPLETED: 'completed',
+  // используется только на сервере без функционала (нужно для деабага)
+  CANCELLED: 'cancelled',
+  // используется только на сервере без функционала (нужно для деабага)
+  FAILED: 'failed' // используется только на сервере без функционала (нужно для деабага)
+};
 
 /***/ }),
 
@@ -47,7 +108,45 @@ eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpa
   \*************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
-eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   DangerCargo: () => (/* binding */ DangerCargo)\n/* harmony export */ });\n/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ \"alt-server\");\n/* harmony import */ var _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./CargoBase.js */ \"./server/cargo/CargoBase.js\");\n//для работы функицй alt.\n\n//Берется базовая логика типа груза из shared\\cargo /CargoBase.js\n\nclass DangerCargo extends _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"] {\n  constructor() {\n    super('Danger', 3000, 'Вы взорвали груз'); //type, reward, reason\n    this.destroyInProgress = false; //для проверки началась ли обработка урона (что бы не было случаев что урон несколько раз обработался за 0,5 секунды и программа будент пытаться несколько раз удалить автомобиль)\n  }\n  async onDamage(vehicle, attacker, deliveryJob) {\n    if (!vehicle.valid) return false; // урон не обработан\n    if (this.destroyInProgresse) return true; // урон обработан\n\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.log(`DangerCargo авто получило урон после проверок`);\n    this.destroyInProgress = true;\n    try {\n      alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(attacker, 'explode');\n      await new Promise(resolve => alt_server__WEBPACK_IMPORTED_MODULE_0__.setTimeout(resolve, 500));\n      vehicle.destroy();\n      deliveryJob.fail(attacker);\n    } finally {\n      //в конце поставится this.destroyInProgress = false; и можно будет снова обрабатывать урон при следующем заказе\n      this.destroyInProgress = false;\n      alt_server__WEBPACK_IMPORTED_MODULE_0__.log('finally DangerCargo');\n    }\n    return true; // урон обработан\n  }\n}\n\n//# sourceURL=webpack://altv-delivery-mod/./server/cargo/DangerCargo.js?\n}");
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   DangerCargo: () => (/* binding */ DangerCargo)
+/* harmony export */ });
+/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
+/* harmony import */ var _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./CargoBase.js */ "./server/cargo/CargoBase.js");
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+//для работы функицй alt.
+
+//Берется базовая логика типа груза из shared\cargo /CargoBase.js
+
+class DangerCargo extends _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__["default"] {
+  constructor() {
+    super('Danger', 3000, 'Вы взорвали груз'); //type, reward, reason
+    this.destroyInProgress = false; //для проверки началась ли обработка урона (что бы не было случаев что урон несколько раз обработался за 0,5 секунды и программа будент пытаться несколько раз удалить автомобиль)
+  }
+  onDamage(vehicle, attacker, deliveryJob) {
+    var _this = this;
+    return _asyncToGenerator(function* () {
+      if (!vehicle.valid) return false; // урон не обработан
+      if (_this.destroyInProgresse) return true; // урон обработан
+
+      alt_server__WEBPACK_IMPORTED_MODULE_0__.log("DangerCargo \u0430\u0432\u0442\u043E \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E \u0443\u0440\u043E\u043D \u043F\u043E\u0441\u043B\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u043E\u043A");
+      _this.destroyInProgress = true;
+      try {
+        alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(attacker, 'explode');
+        yield new Promise(resolve => alt_server__WEBPACK_IMPORTED_MODULE_0__.setTimeout(resolve, 500));
+        vehicle.destroy();
+        deliveryJob.fail(attacker);
+      } finally {
+        //в конце поставится this.destroyInProgress = false; и можно будет снова обрабатывать урон при следующем заказе
+        _this.destroyInProgress = false;
+        alt_server__WEBPACK_IMPORTED_MODULE_0__.log('finally DangerCargo');
+      }
+      return true; // урон обработан
+    })();
+  }
+}
 
 /***/ }),
 
@@ -57,7 +156,44 @@ eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpa
   \***********************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
-eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   HardCargo: () => (/* binding */ HardCargo)\n/* harmony export */ });\n/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ \"alt-server\");\n/* harmony import */ var _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./CargoBase.js */ \"./server/cargo/CargoBase.js\");\n//для работы функицй alt.\n\n//Берется базовая логика типа груза из shared\\cargo /CargoBase.js\n\nclass HardCargo extends _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"] {\n  constructor() {\n    super('Hard', 2000, 'Вы уничтожили груз'); //type, reward, reason\n    this.destroyInProgress = false; //для проверки началась ли обработка урона (что бы не было случаев что урон несколько раз обработался за 0,5 секунды и программа будент пытаться несколько раз удалить автомобиль)\n  }\n  async onDamage(vehicle, attacker, deliveryJob) {\n    if (!vehicle.valid) return false; // урон не обработан\n    if (this.destroyInProgress) return true; // урон обработан\n\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.log(`HardCargo авто получило урон после проверок`);\n    this.destroyInProgress = true;\n    try {\n      await new Promise(resolve => alt_server__WEBPACK_IMPORTED_MODULE_0__.setTimeout(resolve, 500));\n      vehicle.destroy();\n      deliveryJob.fail(attacker);\n    } finally {\n      //в конце поставится this.destroyInProgress = false; и можно будет снова обрабатывать урон при следующем заказе\n      this.destroyInProgress = false;\n      alt_server__WEBPACK_IMPORTED_MODULE_0__.log('finally HardCargo');\n    }\n    return true; // урон обработан\n  }\n}\n\n//# sourceURL=webpack://altv-delivery-mod/./server/cargo/HardCargo.js?\n}");
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   HardCargo: () => (/* binding */ HardCargo)
+/* harmony export */ });
+/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
+/* harmony import */ var _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./CargoBase.js */ "./server/cargo/CargoBase.js");
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+//для работы функицй alt.
+
+//Берется базовая логика типа груза из shared\cargo /CargoBase.js
+
+class HardCargo extends _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__["default"] {
+  constructor() {
+    super('Hard', 2000, 'Вы уничтожили груз'); //type, reward, reason
+    this.destroyInProgress = false; //для проверки началась ли обработка урона (что бы не было случаев что урон несколько раз обработался за 0,5 секунды и программа будент пытаться несколько раз удалить автомобиль)
+  }
+  onDamage(vehicle, attacker, deliveryJob) {
+    var _this = this;
+    return _asyncToGenerator(function* () {
+      if (!vehicle.valid) return false; // урон не обработан
+      if (_this.destroyInProgress) return true; // урон обработан
+
+      alt_server__WEBPACK_IMPORTED_MODULE_0__.log("HardCargo \u0430\u0432\u0442\u043E \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E \u0443\u0440\u043E\u043D \u043F\u043E\u0441\u043B\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u043E\u043A");
+      _this.destroyInProgress = true;
+      try {
+        yield new Promise(resolve => alt_server__WEBPACK_IMPORTED_MODULE_0__.setTimeout(resolve, 500));
+        vehicle.destroy();
+        deliveryJob.fail(attacker);
+      } finally {
+        //в конце поставится this.destroyInProgress = false; и можно будет снова обрабатывать урон при следующем заказе
+        _this.destroyInProgress = false;
+        alt_server__WEBPACK_IMPORTED_MODULE_0__.log('finally HardCargo');
+      }
+      return true; // урон обработан
+    })();
+  }
+}
 
 /***/ }),
 
@@ -67,47 +203,52 @@ eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpa
   \**************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
-eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   IllegalCargo: () => (/* binding */ IllegalCargo)\n/* harmony export */ });\n/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ \"alt-server\");\n/* harmony import */ var _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./CargoBase.js */ \"./server/cargo/CargoBase.js\");\n//для работы функицй alt.\n//в этом файле такие функции не используются но вдруг в будущем будет добавлена еще логика и возникнет необходимость в altv функционале\n\n//Берется базовая логика типа груза из shared\\cargo /CargoBase.js\n\nclass IllegalCargo extends _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__[\"default\"] {\n  constructor() {\n    super('Illegal', 1500, 'Вы находились слишком близко к полицейскому участку'); //type, reward, reason\n  }\n}\n\n//# sourceURL=webpack://altv-delivery-mod/./server/cargo/IllegalCargo.js?\n}");
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   IllegalCargo: () => (/* binding */ IllegalCargo)
+/* harmony export */ });
+/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
+/* harmony import */ var _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./CargoBase.js */ "./server/cargo/CargoBase.js");
+//для работы функицй alt.
+//в этом файле такие функции не используются но вдруг в будущем будет добавлена еще логика и возникнет необходимость в altv функционале
 
-/***/ }),
+//Берется базовая логика типа груза из shared\cargo /CargoBase.js
 
-/***/ "./server/startServer.js":
-/*!*******************************!*\
-  !*** ./server/startServer.js ***!
-  \*******************************/
-/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
-
-eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ \"alt-server\");\n/* harmony import */ var fs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! fs */ \"fs\");\n/* harmony import */ var path__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! path */ \"path\");\n/* harmony import */ var _cargo_CommonCargo_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./cargo/CommonCargo.js */ \"./server/cargo/CommonCargo.js\");\n/* harmony import */ var _cargo_DangerCargo_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./cargo/DangerCargo.js */ \"./server/cargo/DangerCargo.js\");\n/* harmony import */ var _cargo_HardCargo_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./cargo/HardCargo.js */ \"./server/cargo/HardCargo.js\");\n/* harmony import */ var _cargo_IllegalCargo_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./cargo/IllegalCargo.js */ \"./server/cargo/IllegalCargo.js\");\n/* harmony import */ var _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./cargo/Consts.js */ \"./server/cargo/Consts.js\");\n// alt:V built-in module that provides server-side API.\n\n// Your chat resource module.\n//import * as chat from 'alt:chat';\n//для работы с файлами\n\n//для работы с путями файлов\n\n//добавление логики каждого типа груза из папки shared\\cargo\n\n\n\n\n\n\n\n//для работы с данными из конфига\nclass ConfigManager {\n  constructor() {\n    this.loadingPoints = [];\n    this.unloadingPoints = [];\n    this.policeStations = [];\n    this.allowedVehicles = [];\n    this.cargoTypes = [_cargo_CommonCargo_js__WEBPACK_IMPORTED_MODULE_3__.CommonCargo, _cargo_HardCargo_js__WEBPACK_IMPORTED_MODULE_5__.HardCargo, _cargo_DangerCargo_js__WEBPACK_IMPORTED_MODULE_4__.DangerCargo, _cargo_IllegalCargo_js__WEBPACK_IMPORTED_MODULE_6__.IllegalCargo];\n    this.deliveryState = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState;\n  }\n  //получение данных из конфига\n  loadConfig() {\n    try {\n      var _fullConfig$points, _fullConfig$points2, _fullConfig$transport;\n      // Используем правильный путь для alt:V ресурсов\n      const configPath = path__WEBPACK_IMPORTED_MODULE_2__.join(process.cwd(), 'resources', 'delivery', 'config', 'config.json');\n\n      // Проверяем существование файла\n      if (!fs__WEBPACK_IMPORTED_MODULE_1__.existsSync(configPath)) {\n        alt_server__WEBPACK_IMPORTED_MODULE_0__.logError(`Config file not found: ${configPath}`);\n        return;\n      }\n      const configData = fs__WEBPACK_IMPORTED_MODULE_1__.readFileSync(configPath, 'utf8');\n      const fullConfig = JSON.parse(configData); //получение всех данных из конфига\n      // Разделение конфига на отдельные части\n      this.loadingPoints = ((_fullConfig$points = fullConfig.points) === null || _fullConfig$points === void 0 ? void 0 : _fullConfig$points.loading) || [];\n      this.unloadingPoints = ((_fullConfig$points2 = fullConfig.points) === null || _fullConfig$points2 === void 0 ? void 0 : _fullConfig$points2.unloading) || [];\n      this.policeStations = fullConfig.policeStations || [];\n      this.allowedVehicles = ((_fullConfig$transport = fullConfig.transport) === null || _fullConfig$transport === void 0 ? void 0 : _fullConfig$transport.allowedVehicles) || [];\n      alt_server__WEBPACK_IMPORTED_MODULE_0__.log(`Config loaded: ${this.loadingPoints.length} loading, ${this.unloadingPoints.length} unloading points`);\n    } catch (error) {\n      alt_server__WEBPACK_IMPORTED_MODULE_0__.logError(`Error loading config: ${error.message}`);\n    }\n  }\n  getCargoTypes() {\n    return this.cargoTypes;\n  }\n  //оптравляет данные из конфига на клиент\n  sendConfigToPlayer(player) {\n    if (this.loadingPoints.length > 0) {\n      alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'initLoadingPoints', this.loadingPoints);\n    }\n    if (this.unloadingPoints.length > 0) {\n      alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'initUnloadingPoints', this.unloadingPoints);\n    }\n    if (this.policeStations.length > 0) {\n      alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'initPoliceStations', this.policeStations);\n    }\n    if (this.allowedVehicles.length > 0) {\n      alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'initAllowedVehicles', this.allowedVehicles);\n    }\n    // отправляет deliveryState на клиент (берется из Consts.js)\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'initDeliveryState', this.deliveryState);\n  }\n}\n\n//общий, основной класс системы доставки\nclass DeliveryJobSystem {\n  constructor() {\n    this.configManager = new ConfigManager();\n    this.activeOrders = new Map(); // хранит активные заказы по ID игроков\n    this.init();\n  }\n  init() {\n    //получение данных из конфига\n    this.configManager.loadConfig();\n    //отправляет конфиг игроку после входа\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.on('playerConnect', player => {\n      this.configManager.sendConfigToPlayer(player);\n      // chat.send(player, \"{80eb34}Press {ff0000}T {80eb34}and type {ff0000}/randomload {80eb34}to start delivery.\");\n    });\n    //когда клиент загрузил автомобиль приходит ивент с клиента\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.onClient('client:startLoading', (player, loadedVehId) => {\n      this.startLoading(player, loadedVehId);\n    });\n    //если с клиента приходит информация что игрок завершил доставку успешно\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.onClient('client:completeDelivery', player => {\n      this.completeDelivery(player);\n    });\n    //если с клиента приходит информация что игрок провалил доставку \n    alt_server__WEBPACK_IMPORTED_MODULE_0__.onClient('client:failDelivery', player => {\n      this.failDelivery(player);\n    });\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.on('vehicleDamage', (vehicle, attacker) => {\n      alt_server__WEBPACK_IMPORTED_MODULE_0__.log(`авто получило урон перед проверками`);\n      this.handleVehicleDamage(vehicle, attacker);\n    });\n    /*\r\n            //единственный способ начать доставку /randomload\r\n            chat.registerCmd(\"randomload\", (player) => {\r\n                this.startNewOrder(player);\r\n            });\r\n    \r\n            chat.registerCmd(\"cancelorder\", (player) => {\r\n                this.cancelOrder(player);\r\n            });\r\n            */\n  }\n  startNewOrder(player) {\n    // отменяем текущий заказ если есть\n    if (this.activeOrders.has(player.id)) {\n      this.cancelOrder(player);\n    }\n    const order = new DeliveryJob(player, this.configManager);\n    this.activeOrders.set(player.id, order);\n    order.start(); // делегирует логику конкретному заказу\n  }\n  startLoading(player, loadedVehId) {\n    const order = this.activeOrders.get(player.id);\n    if (order) {\n      order.Loaded(loadedVehId); // делегирует логику конкретному заказу\n    }\n  }\n  completeDelivery(player) {\n    const order = this.activeOrders.get(player.id);\n    if (order) {\n      order.complete(); // делегирует логику конкретному заказу\n\n      this.activeOrders.delete(player.id);\n    }\n  }\n  failDelivery(player) {\n    const order = this.activeOrders.get(player.id);\n    if (order) {\n      order.fail(); // делегирует логику конкретному заказу\n    }\n  }\n  cancelOrder(player) {\n    const order = this.activeOrders.get(player.id);\n    if (order) {\n      order.cancel(); // делегирует логику конкретному заказу\n      this.activeOrders.delete(player.id);\n    }\n  }\n  async handleVehicleDamage(vehicle, attacker) {\n    if (!(vehicle !== null && vehicle !== void 0 && vehicle.valid) || !(attacker instanceof alt_server__WEBPACK_IMPORTED_MODULE_0__.Player) || !attacker.valid) return;\n    const order = this.activeOrders.get(attacker.id);\n    if (order && order.loadedVehId === vehicle.id) {\n      //проверка что урон был получеен машиной в которую погружен заказ\n      alt_server__WEBPACK_IMPORTED_MODULE_0__.log(`авто получило урон после проверок на загруженный автомобиль`);\n      alt_server__WEBPACK_IMPORTED_MODULE_0__.log(`order.loadedVehId: ${order.loadedVehId}`);\n      await order.handleDamage(vehicle, attacker);\n    }\n  }\n}\n\n// Конкретный личный заказ доставки\nclass DeliveryJob {\n  constructor(player, configManager) {\n    this.player = player; //id игрока которой выполняет доставку\n    this.configManager = configManager;\n    this.cargo = null; // текущий тип заказа\n    this.loadedVehId = null; //id загруженнного автомобился\n    this.cargoTypes = this.configManager.getCargoTypes(); // Получаем типы грузов из configManager\n    this.state = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.EMPTY; // empty, loading, delivering, completed, cancelled\n    this.damageHandlingInProgress = false; // для единоразовой обработки урона\n  }\n  start() {\n    const CargoClass = this.cargoTypes[Math.floor(Math.random() * this.cargoTypes.length)];\n    this.cargo = new CargoClass();\n    this.state = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.ACTIVE; //показывает что заказ только что начался\n\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.log(`Выбран тип груза: ${this.cargo.type}`);\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'client:startDelivery', this.cargo.type);\n  }\n\n  //запоминает loadedVehId\n  Loaded(loadedVehId) {\n    this.loadedVehId = loadedVehId;\n    this.state = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.DELIVERING; //автомобиль был загружен и едет до точки разгрузки, для проверок урона\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.log(`Loaded vehicle: ${loadedVehId}`);\n  }\n\n  // выдает награду\n  complete() {\n    this.state = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.COMPLETED; // пока что не используется, но для дебага и для возможных расширений в коде\n    this.cargo.onSuccessfulDelivery(this.player); // выдает награду\n    this.loadedVehId = null;\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.log(`Delivery completed for ${this.player.id}`);\n  }\n\n  // отменяет текущий заказ\n  cancel() {\n    this.state = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.CANCELLED; // пока что не используется, но для дебага и для возможных расширений в коде\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'client:cancelDelivery');\n    this.loadedVehId = null;\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.log(`Delivery cancelled for ${this.player.id}`);\n  }\n\n  // отменяет текущий заказ + отправляет уведомление с причиной провала\n  fail() {\n    this.state = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.FAILED; // пока что не используется, но для дебага и для возможных расширений в коде\n    this.cargo.onDeliveryFailed(this.player);\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'client:cancelDelivery');\n    this.loadedVehId = null;\n    alt_server__WEBPACK_IMPORTED_MODULE_0__.log(`Delivery failed for ${this.player.id}`);\n  }\n  async handleDamage(vehicle, attacker) {\n    //если авто получило урон, но игрок не едет к точке разгрузки или если урон уже обрабатывается (по идее проверка на state не нужна так как раньше была проверка на loadedVehId)\n    if (this.state !== _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.DELIVERING || this.damageHandlingInProgress) return;\n    this.damageHandlingInProgress = true; // что быв повтоно не вызывались проверки если авто еще н6е успело удалиться\n\n    try {\n      await this.cargo.onDamage(vehicle, attacker, this);\n    } finally {\n      // после завершения обработки урона ставит this.damageHandlingInProgress = false;\n      this.damageHandlingInProgress = false;\n    }\n  }\n}\n\n//new DeliveryJob();\nnew DeliveryJobSystem();\n\n//# sourceURL=webpack://altv-delivery-mod/./server/startServer.js?\n}");
+class IllegalCargo extends _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__["default"] {
+  constructor() {
+    super('Illegal', 1500, 'Вы находились слишком близко к полицейскому участку'); //type, reward, reason
+  }
+}
 
 /***/ }),
 
 /***/ "alt-server":
-/*!**********************!*\
-  !*** external "alt" ***!
-  \**********************/
+/*!*****************************!*\
+  !*** external "alt-server" ***!
+  \*****************************/
 /***/ ((module) => {
 
-module.exports = __WEBPACK_EXTERNAL_MODULE_alt__;
+module.exports = __WEBPACK_EXTERNAL_MODULE_alt_server_bcde031e__;
 
 /***/ }),
 
 /***/ "fs":
-/*!**************************!*\
-  !*** external "node:fs" ***!
-  \**************************/
+/*!*********************!*\
+  !*** external "fs" ***!
+  \*********************/
 /***/ ((module) => {
 
-module.exports = __WEBPACK_EXTERNAL_MODULE_node_fs_75ed2103__;
+module.exports = __WEBPACK_EXTERNAL_createRequire_require("fs");
 
 /***/ }),
 
 /***/ "path":
-/*!****************************!*\
-  !*** external "node:path" ***!
-  \****************************/
+/*!***********************!*\
+  !*** external "path" ***!
+  \***********************/
 /***/ ((module) => {
 
-module.exports = __WEBPACK_EXTERNAL_MODULE_node_path_02319fef__;
+module.exports = __WEBPACK_EXTERNAL_createRequire_require("path");
 
 /***/ })
 
@@ -167,9 +308,257 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_node_path_02319fef__;
 /******/ })();
 /******/ 
 /************************************************************************/
-/******/ 
-/******/ // startup
-/******/ // Load entry module and return exports
-/******/ // This entry module can't be inlined because the eval devtool is used.
-/******/ var __webpack_exports__ = __webpack_require__("./server/startServer.js");
-/******/ 
+var __webpack_exports__ = {};
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
+(() => {
+/*!*******************************!*\
+  !*** ./server/startServer.js ***!
+  \*******************************/
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
+/* harmony import */ var fs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! fs */ "fs");
+/* harmony import */ var path__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! path */ "path");
+/* harmony import */ var _cargo_CommonCargo_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./cargo/CommonCargo.js */ "./server/cargo/CommonCargo.js");
+/* harmony import */ var _cargo_DangerCargo_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./cargo/DangerCargo.js */ "./server/cargo/DangerCargo.js");
+/* harmony import */ var _cargo_HardCargo_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./cargo/HardCargo.js */ "./server/cargo/HardCargo.js");
+/* harmony import */ var _cargo_IllegalCargo_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./cargo/IllegalCargo.js */ "./server/cargo/IllegalCargo.js");
+/* harmony import */ var _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./cargo/Consts.js */ "./server/cargo/Consts.js");
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+// alt:V built-in module that provides server-side API.
+
+// Your chat resource module.
+//import * as chat from 'alt:chat';
+//для работы с файлами
+
+//для работы с путями файлов
+
+//добавление логики каждого типа груза из папки shared\cargo
+
+
+
+
+
+
+
+//для работы с данными из конфига
+class ConfigManager {
+  constructor() {
+    this.loadingPoints = [];
+    this.unloadingPoints = [];
+    this.policeStations = [];
+    this.allowedVehicles = [];
+    this.cargoTypes = [_cargo_CommonCargo_js__WEBPACK_IMPORTED_MODULE_3__.CommonCargo, _cargo_HardCargo_js__WEBPACK_IMPORTED_MODULE_5__.HardCargo, _cargo_DangerCargo_js__WEBPACK_IMPORTED_MODULE_4__.DangerCargo, _cargo_IllegalCargo_js__WEBPACK_IMPORTED_MODULE_6__.IllegalCargo];
+    this.deliveryState = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState;
+  }
+  //получение данных из конфига
+  loadConfig() {
+    try {
+      var _fullConfig$points, _fullConfig$points2, _fullConfig$transport;
+      // Используем правильный путь для alt:V ресурсов
+      var configPath = path__WEBPACK_IMPORTED_MODULE_2__.join(process.cwd(), 'resources', 'delivery', 'config', 'config.json');
+
+      // Проверяем существование файла
+      if (!fs__WEBPACK_IMPORTED_MODULE_1__.existsSync(configPath)) {
+        alt_server__WEBPACK_IMPORTED_MODULE_0__.logError("Config file not found: ".concat(configPath));
+        return;
+      }
+      var configData = fs__WEBPACK_IMPORTED_MODULE_1__.readFileSync(configPath, 'utf8');
+      var fullConfig = JSON.parse(configData); //получение всех данных из конфига
+      // Разделение конфига на отдельные части
+      this.loadingPoints = ((_fullConfig$points = fullConfig.points) === null || _fullConfig$points === void 0 ? void 0 : _fullConfig$points.loading) || [];
+      this.unloadingPoints = ((_fullConfig$points2 = fullConfig.points) === null || _fullConfig$points2 === void 0 ? void 0 : _fullConfig$points2.unloading) || [];
+      this.policeStations = fullConfig.policeStations || [];
+      this.allowedVehicles = ((_fullConfig$transport = fullConfig.transport) === null || _fullConfig$transport === void 0 ? void 0 : _fullConfig$transport.allowedVehicles) || [];
+      alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Config loaded: ".concat(this.loadingPoints.length, " loading, ").concat(this.unloadingPoints.length, " unloading points"));
+    } catch (error) {
+      alt_server__WEBPACK_IMPORTED_MODULE_0__.logError("Error loading config: ".concat(error.message));
+    }
+  }
+  getCargoTypes() {
+    return this.cargoTypes;
+  }
+  //оптравляет данные из конфига на клиент
+  sendConfigToPlayer(player) {
+    if (this.loadingPoints.length > 0) {
+      alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'initLoadingPoints', this.loadingPoints);
+    }
+    if (this.unloadingPoints.length > 0) {
+      alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'initUnloadingPoints', this.unloadingPoints);
+    }
+    if (this.policeStations.length > 0) {
+      alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'initPoliceStations', this.policeStations);
+    }
+    if (this.allowedVehicles.length > 0) {
+      alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'initAllowedVehicles', this.allowedVehicles);
+    }
+    // отправляет deliveryState на клиент (берется из Consts.js)
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'initDeliveryState', this.deliveryState);
+  }
+}
+
+//общий, основной класс системы доставки
+class DeliveryJobSystem {
+  constructor() {
+    this.configManager = new ConfigManager();
+    this.activeOrders = new Map(); // хранит активные заказы по ID игроков
+    this.init();
+  }
+  init() {
+    //получение данных из конфига
+    this.configManager.loadConfig();
+    //отправляет конфиг игроку после входа
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.on('playerConnect', player => {
+      this.configManager.sendConfigToPlayer(player);
+      // chat.send(player, "{80eb34}Press {ff0000}T {80eb34}and type {ff0000}/randomload {80eb34}to start delivery.");
+    });
+    //когда клиент загрузил автомобиль приходит ивент с клиента
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.onClient('client:startLoading', (player, loadedVehId) => {
+      this.startLoading(player, loadedVehId);
+    });
+    //если с клиента приходит информация что игрок завершил доставку успешно
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.onClient('client:completeDelivery', player => {
+      this.completeDelivery(player);
+    });
+    //если с клиента приходит информация что игрок провалил доставку 
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.onClient('client:failDelivery', player => {
+      this.failDelivery(player);
+    });
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.on('vehicleDamage', (vehicle, attacker) => {
+      alt_server__WEBPACK_IMPORTED_MODULE_0__.log("\u0430\u0432\u0442\u043E \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E \u0443\u0440\u043E\u043D \u043F\u0435\u0440\u0435\u0434 \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0430\u043C\u0438");
+      this.handleVehicleDamage(vehicle, attacker);
+    });
+    /*
+            //единственный способ начать доставку /randomload
+            chat.registerCmd("randomload", (player) => {
+                this.startNewOrder(player);
+            });
+    
+            chat.registerCmd("cancelorder", (player) => {
+                this.cancelOrder(player);
+            });
+            */
+  }
+  startNewOrder(player) {
+    // отменяем текущий заказ если есть
+    if (this.activeOrders.has(player.id)) {
+      this.cancelOrder(player);
+    }
+    var order = new DeliveryJob(player, this.configManager);
+    this.activeOrders.set(player.id, order);
+    order.start(); // делегирует логику конкретному заказу
+  }
+  startLoading(player, loadedVehId) {
+    var order = this.activeOrders.get(player.id);
+    if (order) {
+      order.Loaded(loadedVehId); // делегирует логику конкретному заказу
+    }
+  }
+  completeDelivery(player) {
+    var order = this.activeOrders.get(player.id);
+    if (order) {
+      order.complete(); // делегирует логику конкретному заказу
+
+      this.activeOrders.delete(player.id);
+    }
+  }
+  failDelivery(player) {
+    var order = this.activeOrders.get(player.id);
+    if (order) {
+      order.fail(); // делегирует логику конкретному заказу
+    }
+  }
+  cancelOrder(player) {
+    var order = this.activeOrders.get(player.id);
+    if (order) {
+      order.cancel(); // делегирует логику конкретному заказу
+      this.activeOrders.delete(player.id);
+    }
+  }
+  handleVehicleDamage(vehicle, attacker) {
+    var _this = this;
+    return _asyncToGenerator(function* () {
+      if (!(vehicle !== null && vehicle !== void 0 && vehicle.valid) || !(attacker instanceof alt_server__WEBPACK_IMPORTED_MODULE_0__.Player) || !attacker.valid) return;
+      var order = _this.activeOrders.get(attacker.id);
+      if (order && order.loadedVehId === vehicle.id) {
+        //проверка что урон был получеен машиной в которую погружен заказ
+        alt_server__WEBPACK_IMPORTED_MODULE_0__.log("\u0430\u0432\u0442\u043E \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E \u0443\u0440\u043E\u043D \u043F\u043E\u0441\u043B\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u043E\u043A \u043D\u0430 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043D\u044B\u0439 \u0430\u0432\u0442\u043E\u043C\u043E\u0431\u0438\u043B\u044C");
+        alt_server__WEBPACK_IMPORTED_MODULE_0__.log("order.loadedVehId: ".concat(order.loadedVehId));
+        yield order.handleDamage(vehicle, attacker);
+      }
+    })();
+  }
+}
+
+// Конкретный личный заказ доставки
+class DeliveryJob {
+  constructor(player, configManager) {
+    this.player = player; //id игрока которой выполняет доставку
+    this.configManager = configManager;
+    this.cargo = null; // текущий тип заказа
+    this.loadedVehId = null; //id загруженнного автомобился
+    this.cargoTypes = this.configManager.getCargoTypes(); // Получаем типы грузов из configManager
+    this.state = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.EMPTY; // empty, loading, delivering, completed, cancelled
+    this.damageHandlingInProgress = false; // для единоразовой обработки урона
+  }
+  start() {
+    var CargoClass = this.cargoTypes[Math.floor(Math.random() * this.cargoTypes.length)];
+    this.cargo = new CargoClass();
+    this.state = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.ACTIVE; //показывает что заказ только что начался
+
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.log("\u0412\u044B\u0431\u0440\u0430\u043D \u0442\u0438\u043F \u0433\u0440\u0443\u0437\u0430: ".concat(this.cargo.type));
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'client:startDelivery', this.cargo.type);
+  }
+
+  //запоминает loadedVehId
+  Loaded(loadedVehId) {
+    this.loadedVehId = loadedVehId;
+    this.state = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.DELIVERING; //автомобиль был загружен и едет до точки разгрузки, для проверок урона
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Loaded vehicle: ".concat(loadedVehId));
+  }
+
+  // выдает награду
+  complete() {
+    this.state = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.COMPLETED; // пока что не используется, но для дебага и для возможных расширений в коде
+    this.cargo.onSuccessfulDelivery(this.player); // выдает награду
+    this.loadedVehId = null;
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Delivery completed for ".concat(this.player.id));
+  }
+
+  // отменяет текущий заказ
+  cancel() {
+    this.state = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.CANCELLED; // пока что не используется, но для дебага и для возможных расширений в коде
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'client:cancelDelivery');
+    this.loadedVehId = null;
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Delivery cancelled for ".concat(this.player.id));
+  }
+
+  // отменяет текущий заказ + отправляет уведомление с причиной провала
+  fail() {
+    this.state = _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.FAILED; // пока что не используется, но для дебага и для возможных расширений в коде
+    this.cargo.onDeliveryFailed(this.player);
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'client:cancelDelivery');
+    this.loadedVehId = null;
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Delivery failed for ".concat(this.player.id));
+  }
+  handleDamage(vehicle, attacker) {
+    var _this2 = this;
+    return _asyncToGenerator(function* () {
+      //если авто получило урон, но игрок не едет к точке разгрузки или если урон уже обрабатывается (по идее проверка на state не нужна так как раньше была проверка на loadedVehId)
+      if (_this2.state !== _cargo_Consts_js__WEBPACK_IMPORTED_MODULE_7__.DeliveryState.DELIVERING || _this2.damageHandlingInProgress) return;
+      _this2.damageHandlingInProgress = true; // что быв повтоно не вызывались проверки если авто еще н6е успело удалиться
+
+      try {
+        yield _this2.cargo.onDamage(vehicle, attacker, _this2);
+      } finally {
+        // после завершения обработки урона ставит this.damageHandlingInProgress = false;
+        _this2.damageHandlingInProgress = false;
+      }
+    })();
+  }
+}
+
+//new DeliveryJob();
+new DeliveryJobSystem();
+})();
+

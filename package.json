@@ -1,23 +1,18 @@
 {
-  "name": "altv-delivery-mod",
+  "name": "altv-mod",
   "version": "1.0.0",
+  "description": "Alt:V mod with Webpack bundling",
   "type": "module",
   "scripts": {
-    "build": "webpack",
+    "build": "webpack --mode=production",
     "build:dev": "webpack --mode=development",
-    "build:prod": "webpack --mode=production",
-    "watch": "webpack --watch --mode=development"
+    "dev": "webpack --mode=development --watch"
   },
   "devDependencies": {
     "@babel/core": "^7.22.0",
     "@babel/preset-env": "^7.22.0",
     "babel-loader": "^9.1.0",
     "webpack": "^5.88.0",
-    "webpack-cli": "^5.1.4"
-  },
-  "dependencies": {
-    "@altv/types-client": "^2.0.0",
-    "@altv/types-server": "^2.0.0",
-    "@altv/types-natives": "^2.0.0"
+    "webpack-cli": "^5.1.0"
   }
 }
