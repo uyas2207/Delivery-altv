@@ -1,5 +1,8 @@
 //для работы с путями файлов
 import path from 'path';
+
+
+
 // fileURLToPath преобразует file:// url в обычный путь, функция для работы с ES модулями
 import { fileURLToPath } from 'url';
 
@@ -30,40 +33,27 @@ development:
   Оптимизация скорости
 */
 
-   // общие настройки для правил загрузчиков (LOADERS)
-  const commonModule = {    // загрузчики преобразуют файлы перед добавлением в сборку
-    rules: [
-      {
-        // test определяет какие файлы обрабатывать
-        // /\.html$/ - все файлы с расширением .html
-        test: /\.html$/,
-        use: 'html-loader',
-        // test определяет какие файлы обрабатывать
-        // /\.js$/ - все файлы с расширением .js
-        test: /\.js$/,
-        // use указывает какой загрузчик использовать
-        use: {
-          loader: 'babel-loader', // Используем Babel для преобразования современного JS в совместимый код JavaScript
-          options: {
-            // важно: не трогаеть esm-импорты, чтобы Webpack корректно управлял ими
-            // preset-env по умолчанию не преобразует модулей, если это не указано.
-            presets: [
-              ['@babel/preset-env', { // @babel/preset-env - умный пресет который определяет какие преобразования нужны
-                targets: { 
-                  esmodules: true // Целевая среда поддерживает ES модули, сохраняет ES модули без преобразования
-                  // это важно чтобы Babel не преобразовывал import/export в require/module.exports
-                } 
-              }]
-            ]
-          }
-        },
-        // exclude исключает папку node_modules из обработки, так как файлы в node_modules уже собраны и не нуждаются в обработке
-        exclude: /node_modules/
+  // общие настройки для правил загрузчиков (LOADERS)
+const commonModule = {
+  rules: [
+    {
+      test: /\.js$/,
+      exclude: /node_modules/,
+      use: {
+        loader: 'babel-loader',
+        options: {
+          presets: [['@babel/preset-env', { targets: { esmodules: true } }]]
+        }
       }
-    ]
-  };
+    },
+    {
+      test: /\.html$/i,
+      use: 'raw-loader', 
+    }
+  ]
+};
   // возвращает массив конфигураций для выполнения доп сборок
-return [
+  return [
     // Клиентская сборка (esm). Не бандлит alt-client и natives — оставляем как внешние esm-модули.
     {
       name: 'client', // имя конфигурации для отладки
