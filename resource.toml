@@ -2,7 +2,8 @@ type = "js"
 main = "dist/server/server.js"
 client-main = "dist/client/client.js"
 client-files = [
-    "dist/client/client.js"
+    "dist/client/client.js",
+    "client/html/index.html"
 ]
 deps = [ 
     "chat"

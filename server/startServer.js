@@ -1,7 +1,7 @@
 // alt:V built-in module that provides server-side API.
 import * as alt from 'alt-server';
 // Your chat resource module.
-//import * as chat from 'alt:chat';
+import * as chat from 'alt:chat';
 //для работы с файлами
 import * as fs from 'fs';       
 //для работы с путями файлов
@@ -27,16 +27,7 @@ class ConfigManager {
     }
 //получение данных из конфига
     loadConfig() {
-        try {
-            // Используем правильный путь для alt:V ресурсов
-            const configPath =  path.join(process.cwd(), 'resources', 'delivery', 'config', 'config.json');
-            
-            // Проверяем существование файла
-            if (!fs.existsSync(configPath)) {
-                alt.logError(`Config file not found: ${configPath}`);
-                return;
-            }
-            
+            const configPath = path.join(process.cwd(), 'resources', 'delivery', 'config', 'config.json');  //путь до конфига
             const configData = fs.readFileSync(configPath, 'utf8');
             const fullConfig = JSON.parse(configData);  //получение всех данных из конфига
             // Разделение конфига на отдельные части
@@ -46,9 +37,6 @@ class ConfigManager {
             this.allowedVehicles = fullConfig.transport?.allowedVehicles || [];
 
             alt.log(`Config loaded: ${this.loadingPoints.length} loading, ${this.unloadingPoints.length} unloading points`);
-        } catch (error) {
-            alt.logError(`Error loading config: ${error.message}`);
-        }
     }
 
     getCargoTypes() {
@@ -87,7 +75,8 @@ class DeliveryJobSystem {
         //отправляет конфиг игроку после входа
         alt.on('playerConnect', (player) => {
             this.configManager.sendConfigToPlayer(player);
-           // chat.send(player, "{80eb34}Press {ff0000}T {80eb34}and type {ff0000}/randomload {80eb34}to start delivery.");
+            chat.send(player, "{80eb34}Press {ff0000}T {80eb34}and type {ff0000}/randomload {80eb34}to start delivery.");
+            player.spawn(-1271.63, -1430.71, 4.34);
         });
         //когда клиент загрузил автомобиль приходит ивент с клиента
         alt.onClient('client:startLoading', (player, loadedVehId) => {  
@@ -106,16 +95,14 @@ class DeliveryJobSystem {
             alt.log(`авто получило урон перед проверками`);
             this.handleVehicleDamage(vehicle, attacker);
         });
-/*
+
         //единственный способ начать доставку /randomload
         chat.registerCmd("randomload", (player) => {
             this.startNewOrder(player);
         });
-
         chat.registerCmd("cancelorder", (player) => {
             this.cancelOrder(player);
         });
-        */
     }
 
     startNewOrder(player) {
