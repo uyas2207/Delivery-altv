@@ -1,6 +1,6 @@
 import * as alt from 'alt-client';
 import * as native from "natives";
-import html from './html/index.html?raw'; // добавляем ?raw чтобы raw-loader отработал
+//import { DeliveryState } from '@shared/Consts.js';
 
 
 //вызов гташных уведмолени с помощью нативок 
@@ -60,16 +60,14 @@ class NotificationManager {
     }
 
     async init() {
-       this.webView = new alt.WebView(`data:text/html;charset=UTF-8,${encodeURIComponent(html)}`);
-        
-        //this.webView = new alt.WebView('http://resource/dist/client/html/index.html');
+        this.webView = new alt.WebView('http://resource/client/html/index.html');
 
             const loadPromise = new Promise((resolve) => {
                 this.webView.once('load', () => resolve(true));
             });
             
             const timeoutPromise = new Promise((resolve) => {
-                alt.setTimeout(() => resolve(false), 10000);
+                alt.setTimeout(() => resolve(false), 2000);
             });
             //если WebView не загрузится за 2 секунды будет isLoaded = false
             const isLoaded = await Promise.race([loadPromise, timeoutPromise]);
@@ -189,13 +187,11 @@ class DeliveryJobClient {
             allowedVehicles: [],
             policeStations: []
         };
-        this.DeliveryState = null; // Добавляем свойство для хранения DeliveryState
-
         this.loadingMarkerType = null;  //текщая точка погрузки
         this.unloadingMarkerType = null;    //текущая точка разгрузк
         this.policeColshapes = []; // Массив для хранения колшейпов полиции
         
-        this.state = null;     //текущее состояние системы доставки
+        this.state = DeliveryState.SELECTING_POINTS;     //текущее состояние системы доставки
         this.currentOrder = null;   // В будущем класс для конкретного заказа, пока что null что бы не использовать что либо что относится только к конкретному заказау до того как игрок начнет конкретный заказ
 
        // this.vehicleBlocker = new VehicleBlocker(); //для блокировки на разгрузке/погрузке
@@ -236,12 +232,14 @@ class DeliveryJobClient {
         alt.onServer('initAllowedVehicles', (VehHash) => {
             this.config.allowedVehicles = VehHash;
         });
+        /*
         // получение DeliveryState с сервера
         alt.onServer('initDeliveryState', (deliveryState) => {
             this.DeliveryState = deliveryState;
             this.state = this.DeliveryState.SELECTING_POINTS; // инициализируем начальное состояние
             alt.log('DeliveryState получен и установлен');
         });
+        */
         // при старте заказа приходит с сервера client:startDelivery, и начинается заказ на клиенте
         alt.onServer('client:startDelivery', (cargoType) => {
             this.startNewOrder(cargoType);  //тип груза определяется на сервере
@@ -297,8 +295,7 @@ class DeliveryJobClient {
         this.currentOrder = new DeliveryOrder(
             cargoType,
             this.config,
-            this.policeColshapes,
-            this.DeliveryState // передает DeliveryState в DeliveryOrder
+            this.policeColshapes
         );
         this.currentOrder.deliveryJobClient = this; // cсылка для последующего обнуления
         this.currentOrder.start();  //старт конкретного заказа в DeliveryOrder
@@ -336,14 +333,14 @@ class DeliveryJobClient {
 
 // Конкретный заказ на клиенте, создается только при старте доставки у конкретного игрока (не при входе на сервер)
 class DeliveryOrder {
-    constructor(cargoType, config, policeColshapes, DeliveryState) {
+    constructor(cargoType, config, policeColshapes) {
         //Данные из конфига
         this.cargoType = cargoType; //тип груза CommonCargo, HardCargo, DangerCargo, IllegalCargo
         this.config = config;   // (все loadingPoints, все unloadingPoints, все allowedVehicles, все policeStations)
         this.policeColshapes = policeColshapes;
-        this.DeliveryState = DeliveryState; // сохраняет DeliveryState
+
         
-        this.state = this.DeliveryState.SELECTING_POINTS;    // использует константу из DeliveryState 'selecting_points'	изначальное состояние при старте системы
+        this.state = DeliveryState.SELECTING_POINTS;    // использует константу из DeliveryState 'selecting_points'	изначальное состояние при старте системы
         this.loadingPoint = null;   //текущая точка погрузки
         this.unloadingPoint = null; //текущая точка разгрузки
         this.loadedVehId = null;    //сетевой id загруженной машины
@@ -355,7 +352,7 @@ class DeliveryOrder {
     async start() {
         await this.selectPoints();
         this.createLoadingPoint();
-        this.state = this.DeliveryState.WAITING_FOR_LOADING;   //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
+        this.state = DeliveryState.WAITING_FOR_LOADING;   //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
     }
 
     selectPoints() {
@@ -418,13 +415,13 @@ class DeliveryOrder {
         // если в будущем будет добавлено больше колшейпов проверка handleColshapeEnterDeliveryOrder будет return
         if (!this.loadingPoint || !this.unloadingPoint || !this.policeColshapes) return;
         // если 'waiting_for_loading' значит колшейп точки погрузки
-        if (this.state === this.DeliveryState.WAITING_FOR_LOADING) {    //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
+        if (this.state === DeliveryState.WAITING_FOR_LOADING) {    //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
             if (colshape === this.loadingPoint.pointVisuals.colshape){
                 this.loadingPoint.PointLoad(colshape, alt.Player.local.vehicle);
             }
         } 
         //если 'delivering' значит колшейп точки разгрузки
-        if (this.state === this.DeliveryState.DELIVERING) {  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+        if (this.state === DeliveryState.DELIVERING) {  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
             if (colshape === this.unloadingPoint.pointVisuals.colshape){
                 this.unloadingPoint.PointUnload(colshape, alt.Player.local.vehicle);
            }
@@ -439,10 +436,10 @@ class DeliveryOrder {
 
     handleColshapeLeave(colshape) {
     // Очищаем обработчики клавиш при выходе из колшейпа (только если открыта webview)
-        if (this.state === this.DeliveryState.WAITING_FOR_LOADING && this.loadingPoint) {     //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
+        if (this.state === DeliveryState.WAITING_FOR_LOADING && this.loadingPoint) {     //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
                 this.loadingPoint.cleanup();
         }
-        if (this.state === this.DeliveryState.DELIVERING && this.unloadingPoint) {   //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+        if (this.state === DeliveryState.DELIVERING && this.unloadingPoint) {   //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
                 this.unloadingPoint.cleanup();
         }
     }
@@ -456,7 +453,7 @@ class DeliveryOrder {
 
         this.loadingPoint.pointVisuals.destroy();
         this.createUnloadingPoint();
-        this.state = this.DeliveryState.DELIVERING  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+        this.state = DeliveryState.DELIVERING  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
         
         drawNotification(`Погрузка завершена! Груз: ${this.cargoType}`);
         alt.emitServer('client:startLoading', this.loadedVehId);    //передает на сервер что игрок погрузил груз
@@ -471,7 +468,7 @@ class DeliveryOrder {
         this.loadedVehId = null;
 
         this.unloadingPoint.pointVisuals.destroy();
-        this.state = this.DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
+        this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
         
         alt.emitServer('client:completeDelivery');
         drawNotification(`Доставка завершена! Груз: ${this.cargoType}`);
@@ -482,16 +479,16 @@ class DeliveryOrder {
 
      cancel() {
         // полная очистка ресурсов
-        if (this.state === this.DeliveryState.WAITING_FOR_LOADING) { //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
+        if (this.state === DeliveryState.WAITING_FOR_LOADING) { //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
             this.loadingPoint.cleanup();
             this.loadingPoint.pointVisuals.destroy();
-            this.state = this.DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
+            this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
         }
-        if (this.state === this.DeliveryState.DELIVERING) {  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+        if (this.state === DeliveryState.DELIVERING) {  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
             this.unloadingPoint.cleanup();
             this.unloadingPoint.pointVisuals.destroy();
             this.loadedVehId = null;
-            this.state = this.DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
+            this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
         }
         
         // обнуление в родители

@@ -12,7 +12,7 @@ import { CommonCargo } from './cargo/CommonCargo.js';
 import { DangerCargo } from './cargo/DangerCargo.js';
 import { HardCargo } from './cargo/HardCargo.js';
 import { IllegalCargo } from './cargo/IllegalCargo.js';
-import { DeliveryState } from './cargo/Consts.js';
+import { DeliveryState } from '../shared/Consts.js';
 
 
 //для работы с данными из конфига
@@ -22,8 +22,9 @@ class ConfigManager {
         this.unloadingPoints = [];
         this.policeStations = [];
         this.allowedVehicles = [];
+       
         this.cargoTypes = [CommonCargo, HardCargo, DangerCargo, IllegalCargo];
-        this.deliveryState = DeliveryState;
+        //this.deliveryState = DeliveryState;
     }
 //получение данных из конфига
     loadConfig() {
@@ -57,7 +58,7 @@ class ConfigManager {
             alt.emitClient(player, 'initAllowedVehicles', this.allowedVehicles);
         }
         // отправляет deliveryState на клиент (берется из Consts.js)
-        alt.emitClient(player, 'initDeliveryState', this.deliveryState);
+        //alt.emitClient(player, 'initDeliveryState', this.deliveryState);
     }
 }
 
