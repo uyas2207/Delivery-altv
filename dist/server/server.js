@@ -223,6 +223,31 @@ class IllegalCargo extends _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__["default"]
 
 /***/ }),
 
+/***/ "./shared/Consts.js":
+/*!**************************!*\
+  !*** ./shared/Consts.js ***!
+  \**************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   DeliveryState: () => (/* binding */ DeliveryState)
+/* harmony export */ });
+// создает глобальный объект напрямую
+var DeliveryState = {
+  EMPTY: 'empty',
+  SELECTING_POINTS: 'selecting_points',
+  WAITING_FOR_LOADING: 'waiting_for_loading',
+  DELIVERING: 'delivering',
+  ACTIVE: 'active',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+  FAILED: 'failed'
+};
+globalThis.DeliveryState = DeliveryState; //делает переменную глобавльной
+
+/***/ }),
+
 /***/ "alt-server":
 /*!*****************************!*\
   !*** external "alt-server" ***!

@@ -57,7 +57,12 @@ const commonModule = {
     // Клиентская сборка (esm). Не бандлит alt-client и natives — оставляем как внешние esm-модули.
     {
       name: 'client', // имя конфигурации для отладки
-      entry: './client/startClient.js', // Точка входа - главный файл клиентской части, Webpack начнет сборку с этого файла и найдет все импорты
+
+      // Добавляем Consts.js как дополнительную точку входа
+      entry: [
+        './shared/Consts.js',    // СНАЧАЛА загружаем Consts.js
+        './client/startClient.js' // ПОТОМ загружаем startClient.js
+      ],
       mode: isProduction ? 'production' : 'development',  // режим сборки влияет на оптимизацию
       target: ['web', 'es2020'], // Целевая среда сборки, не ломает esm
       // Настройки выходных файлов
@@ -69,7 +74,12 @@ const commonModule = {
         // генерирует ES модули (вместо CommonJS)
         module: true, // esm-вывод
         // Настройки библиотеки - как экспортировать код
-        library: { type: 'module' } // Использовать ES модули для экспорта
+        library: { 
+          type: 'module',
+          // Экспортируем DeliveryState глобально для доступа извне
+          // Это делает DeliveryState доступной как именованный экспорт
+          export: 'DeliveryState'
+        }
       },
       // Экспериментальные функции Webpack
       experiments: {
@@ -92,8 +102,22 @@ const commonModule = {
       module: commonModule, // общие настройки для правил загрузчиков (LOADERS)
       //оптимизация сборки
       optimization: {
-        minimize: isProduction // Минифицировать код в production режиме
+        minimize: isProduction, // Минифицировать код в production режиме
+        splitChunks: false
       },
+/*
+      // ДОБАВЛЯЕМ PLUGINS ДЛЯ ProvidePlugin
+      plugins: [
+        new webpack.ProvidePlugin({
+          // ProvidePlugin автоматически предоставляет DeliveryState как глобальную переменную
+          // Когда Webpack видит 'DeliveryState' в коде, он автоматически подставляет импорт из Consts.js
+          DeliveryState: [
+            path.resolve(__dirname, 'shared/Consts.js'), // абсолютный путь к файлу
+            'DeliveryState' // имя экспорта из файла
+          ]
+        })
+      ],
+*/
     // ИСТОЧНИКИ ДЛЯ ОТЛАДКИ (SOURCE MAPS) (связывают собранный код с исходниками)
      devtool: false // Отключаем source maps (alt:V devtools могут некорректно работать с source maps )
     },

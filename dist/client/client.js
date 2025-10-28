@@ -93,7 +93,31 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_natives__;
 /******/ 
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other entry modules.
+(() => {
+var __webpack_exports__ = {};
+/*!**************************!*\
+  !*** ./shared/Consts.js ***!
+  \**************************/
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   DeliveryState: () => (/* binding */ DeliveryState)
+/* harmony export */ });
+// создает глобальный объект напрямую
+var DeliveryState = {
+  EMPTY: 'empty',
+  SELECTING_POINTS: 'selecting_points',
+  WAITING_FOR_LOADING: 'waiting_for_loading',
+  DELIVERING: 'delivering',
+  ACTIVE: 'active',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+  FAILED: 'failed'
+};
+globalThis.DeliveryState = DeliveryState; //делает переменную глобавльной
+})();
+
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other entry modules.
 (() => {
 /*!*******************************!*\
   !*** ./client/startClient.js ***!
