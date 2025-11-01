@@ -169,49 +169,55 @@ class DeliveryJob {
         this.cargo = null;          // текущий тип заказа
         this.loadedVehId = null;    //id загруженнного автомобился
         this.cargoTypes = this.configManager.getCargoTypes();  // Получаем типы грузов из configManager
-        this.state = DeliveryState.EMPTY;                 // empty, loading, delivering, completed, cancelled
+        this.state = DeliveryState.EMPTY;
         this.damageHandlingInProgress = false; // для единоразовой обработки урона
+    }
+    //метод для смены сосотояния текщей доставки
+    setState(newState) {
+    this.state = newState;
+    alt.log(`Изменился this.state на ${this.state}`);
+    alt.emitClient(this.player, 'delivery:stateChanged', newState); //смена состояния заказа на клиенте
     }
 
     start() {
         const CargoClass = this.cargoTypes[Math.floor(Math.random() * this.cargoTypes.length)];
         this.cargo = new CargoClass();
-        this.state = DeliveryState.ACTIVE; //показывает что заказ только что начался
 
         alt.log(`Выбран тип груза: ${this.cargo.type}`);
         alt.emitClient(this.player, 'client:startDelivery', this.cargo.type);
+        this.setState(DeliveryState.WAITING_FOR_LOADING);  //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
     }
 
 //запоминает loadedVehId
     Loaded(loadedVehId) {
         this.loadedVehId = loadedVehId;
-        this.state = DeliveryState.DELIVERING;  //автомобиль был загружен и едет до точки разгрузки, для проверок урона
+        this.setState(DeliveryState.DELIVERING);  //автомобиль был загружен и едет до точки разгрузки, для проверок урона
         alt.log(`Loaded vehicle: ${loadedVehId}`);
     }
 
 // выдает награду
     complete() {
-        this.state = DeliveryState.COMPLETED;   // пока что не используется, но для дебага и для возможных расширений в коде
         this.cargo.onSuccessfulDelivery(this.player);   // выдает награду
         this.loadedVehId = null;
         alt.log(`Delivery completed for ${this.player.id}`);
+        this.setState(DeliveryState.EMPTY);   //'empty'			нет активного заказа (провален или выполнен)
     }
 
 // отменяет текущий заказ
     cancel() {
-        this.state = DeliveryState.CANCELLED;   // пока что не используется, но для дебага и для возможных расширений в коде
         alt.emitClient(this.player, 'client:cancelDelivery');
         this.loadedVehId = null;
         alt.log(`Delivery cancelled for ${this.player.id}`);
+        this.setState(DeliveryState.EMPTY);  //'empty'			нет активного заказа (провален или выполнен)
     }
 
 // отменяет текущий заказ + отправляет уведомление с причиной провала
     fail() {
-        this.state = DeliveryState.FAILED;  // пока что не используется, но для дебага и для возможных расширений в коде
         this.cargo.onDeliveryFailed(this.player);
         alt.emitClient(this.player, 'client:cancelDelivery');
         this.loadedVehId = null;
         alt.log(`Delivery failed for ${this.player.id}`);
+        this.setState(DeliveryState.EMPTY);  //'empty'			нет активного заказа (провален или выполнен)
     }
 
     async handleDamage(vehicle, attacker) {
@@ -229,3 +235,5 @@ class DeliveryJob {
 
 //new DeliveryJob();
 new DeliveryJobSystem();
+
+//alt.emitClient(player, 'delivery:stateChanged', state);

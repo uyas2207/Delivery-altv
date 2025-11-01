@@ -32,17 +32,21 @@ development:
 */
 
    // общие настройки для правил загрузчиков (LOADERS)
-const commonModule = {
+const commonModule = {  // загрузчики преобразуют файлы перед добавлением в сборку
   rules: [
     {
+      // test определяет какие файлы обрабатывать
+      // /\.js$/ - все файлы с расширением .js
       test: /\.js$/,
+      // exclude исключает папку node_modules из обработки, так как файлы в node_modules уже собраны и не нуждаются в обработке
       exclude: /node_modules/,
+      // use указывает какой загрузчик использовать
       use: {
-        loader: 'babel-loader',
+        loader: 'babel-loader', // Используем Babel для преобразования современного JS в совместимый код JavaScript
         options: {
           presets: [
             [
-              '@babel/preset-env',
+              '@babel/preset-env',  // @babel/preset-env - умный пресет который определяет какие преобразования нужны
               {
                 targets: { esmodules: true },
                 modules: false
@@ -107,7 +111,7 @@ return [
         minimize: isProduction, // Минифицировать код в production режиме
         splitChunks: false
       },
-/*
+
 
       // ДОБАВЛЯЕМ PLUGINS ДЛЯ ProvidePlugin
       plugins: [
@@ -117,10 +121,15 @@ return [
           DeliveryState: [
             path.resolve(__dirname, 'shared/Consts.js'), // абсолютный путь к файлу
             'DeliveryState' // имя экспорта из файла
+          ],
+          // NotificationManager для клиента
+          NotificationManager: [
+            path.resolve(__dirname, 'client/clientNotificationManager.js'), // абсолютный путь к файлу
+            'default' // используем default export из файла
           ]
         })
       ],
-*/
+
 
     // ИСТОЧНИКИ ДЛЯ ОТЛАДКИ (SOURCE MAPS) (связывают собранный код с исходниками)
      devtool: false // Отключаем source maps (alt:V devtools могут некорректно работать с source maps )

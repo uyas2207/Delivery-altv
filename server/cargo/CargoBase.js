@@ -1,5 +1,6 @@
 //для работы функицй alt.
 import * as alt from 'alt-server';
+import { NotificationManager } from '../serverNotification/serverNotificationManager.js';   //для вызова уведмолений
 
 class CargoBase {
     constructor(type, reward, reason) {
@@ -16,12 +17,12 @@ class CargoBase {
     }
     //общая логика для успешного завершения
     onSuccessfulDelivery(player) {
-        alt.emitClient(player, 'drawNotification', `+${this.reward}\$`);
+        NotificationManager.showNotify(player, `+${this.reward}\$`);
     }
     //общая логика для провала
     onDeliveryFailed(player) {
-        alt.emitClient(player, 'drawNotification',`${this.reason}`);
-        alt.emitClient(player, 'drawNotification','заказ отменен!');
+        NotificationManager.showNotify(player,`${this.reason}`);
+        NotificationManager.showNotify(player,'заказ отменен!');
     }
 }
 //передается CargoBase для файлов которые будут использовать import CargoBase from './CargoBase.js'

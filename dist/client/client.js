@@ -2,6 +2,117 @@ import * as __WEBPACK_EXTERNAL_MODULE_alt_client_680395b4__ from "alt-client";
 import * as __WEBPACK_EXTERNAL_MODULE_natives__ from "natives";
 /******/ var __webpack_modules__ = ({
 
+/***/ "./client/clientNotificationManager.js":
+/*!*********************************************!*\
+  !*** ./client/clientNotificationManager.js ***!
+  \*********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ "alt-client");
+/* harmony import */ var natives__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! natives */ "natives");
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+
+
+
+// Централизованный менеджер уведомлений на клиенте
+class NotificationManager {
+  static getInstance() {
+    if (!this.instance) {
+      this.instance = new NotificationManager();
+    }
+    return this.instance;
+  }
+  constructor() {
+    var _this = this;
+    if (NotificationManager.instance) {
+      return NotificationManager.instance;
+    }
+    this.webView = null;
+    this.isInitialized = false;
+    this.isWebViewOpen = false;
+
+    // регистрация обработчика серверных уведомлений
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('notification.notify', function (message) {
+      var autoHide = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      _this.drawNotification(message, autoHide);
+    });
+    NotificationManager.instance = this;
+  }
+
+  // Основной метод для показа уведомлений
+  drawNotification(message) {
+    var autoHide = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+    natives__WEBPACK_IMPORTED_MODULE_1__.beginTextCommandThefeedPost('STRING');
+    natives__WEBPACK_IMPORTED_MODULE_1__.addTextComponentSubstringPlayerName(message);
+    var notificationId = natives__WEBPACK_IMPORTED_MODULE_1__.endTextCommandThefeedPostTicker(false, false);
+    if (autoHide) {
+      setTimeout(() => {
+        natives__WEBPACK_IMPORTED_MODULE_1__.thefeedRemoveItem(notificationId);
+      }, 3000);
+    }
+  }
+  initialize() {
+    var _this2 = this;
+    return _asyncToGenerator(function* () {
+      if (_this2.isInitialized) {
+        return;
+      }
+      yield _this2.init();
+    })();
+  }
+  init() {
+    var _this3 = this;
+    return _asyncToGenerator(function* () {
+      _this3.webView = new alt_client__WEBPACK_IMPORTED_MODULE_0__.WebView('http://resource/client/html/index.html');
+      var loadPromise = new Promise(resolve => {
+        _this3.webView.once('load', () => resolve(true));
+      });
+      var timeoutPromise = new Promise(resolve => {
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.setTimeout(() => resolve(false), 2000);
+      });
+      var isLoaded = yield Promise.race([loadPromise, timeoutPromise]);
+      if (isLoaded) {
+        _this3.isInitialized = true;
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Notification manager initialized SUCCESS');
+      } else {
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Notification manager did not initialize FAILURE (timeout)');
+      }
+    })();
+  }
+  showPersistent(title, text) {
+    var id = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+    if (!this.isInitialized) {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Notification manager не инициализирован');
+      return null;
+    }
+    var notificationId = id || "persistent_".concat(Date.now());
+    this.webView.emit('showPersistentNotification', notificationId, title, text);
+    this.isWebViewOpen = true;
+    return notificationId;
+  }
+  hidePersistent(id) {
+    if (this.isInitialized) {
+      this.webView.emit('hidePersistentNotification', id);
+      this.isWebViewOpen = false;
+    } else {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Попытка скрыть Notification при isInitialized === null');
+      this.isWebViewOpen = false;
+    }
+  }
+}
+_defineProperty(NotificationManager, "instance", null);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (NotificationManager);
+
+/***/ }),
+
 /***/ "./shared/Consts.js":
 /*!**************************!*\
   !*** ./shared/Consts.js ***!
@@ -12,23 +123,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   DeliveryState: () => (/* binding */ DeliveryState)
 /* harmony export */ });
+// значение DeliveryState для клиента и сервера
 var DeliveryState = {
   EMPTY: 'empty',
   //'empty'			нет активного заказа (провален или выполнен)
-  SELECTING_POINTS: 'selecting_points',
-  ///'selecting_points'	изначальное состояние при старте системы на клиенте
   WAITING_FOR_LOADING: 'waiting_for_loading',
   //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
-  DELIVERING: 'delivering',
-  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
-  ACTIVE: 'active',
-  //используется только на сервере, показывает что заказ только что начался
-  COMPLETED: 'completed',
-  // используется только на сервере без функционала (нужно для деабага)
-  CANCELLED: 'cancelled',
-  // используется только на сервере без функционала (нужно для деабага)
-  FAILED: 'failed' // используется только на сервере без функционала (нужно для деабага)
+  DELIVERING: 'delivering' //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
 };
+//globalThis.DeliveryState = DeliveryState;   //делает переменную глобавльной
 
 /***/ }),
 
@@ -109,31 +212,7 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_natives__;
 /******/ 
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry needs to be wrapped in an IIFE because it needs to be isolated against other entry modules.
-(() => {
-var __webpack_exports__ = {};
-/*!**************************!*\
-  !*** ./shared/Consts.js ***!
-  \**************************/
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   DeliveryState: () => (/* binding */ DeliveryState)
-/* harmony export */ });
-// создает глобальный объект напрямую
-var DeliveryState = {
-  EMPTY: 'empty',
-  SELECTING_POINTS: 'selecting_points',
-  WAITING_FOR_LOADING: 'waiting_for_loading',
-  DELIVERING: 'delivering',
-  ACTIVE: 'active',
-  COMPLETED: 'completed',
-  CANCELLED: 'cancelled',
-  FAILED: 'failed'
-};
-globalThis.DeliveryState = DeliveryState; //делает переменную глобавльной
-})();
-
-// This entry needs to be wrapped in an IIFE because it needs to be isolated against other entry modules.
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
 (() => {
 /*!*******************************!*\
   !*** ./client/startClient.js ***!
@@ -141,117 +220,15 @@ globalThis.DeliveryState = DeliveryState; //делает переменную г
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ "alt-client");
 /* harmony import */ var natives__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! natives */ "natives");
+/* provided dependency */ var NotificationManager = __webpack_require__(/*! ./client/clientNotificationManager.js */ "./client/clientNotificationManager.js")["default"];
 /* provided dependency */ var DeliveryState = __webpack_require__(/*! ./shared/Consts.js */ "./shared/Consts.js")["DeliveryState"];
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
-function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
-function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
-function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 
 
 //import { DeliveryState } from '@shared/Consts.js';
 
-//вызов гташных уведмолени с помощью нативок 
-function drawNotification(message) {
-  var autoHide = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-  natives__WEBPACK_IMPORTED_MODULE_1__.beginTextCommandThefeedPost('STRING');
-  natives__WEBPACK_IMPORTED_MODULE_1__.addTextComponentSubstringPlayerName(message);
-  var notificationId = natives__WEBPACK_IMPORTED_MODULE_1__.endTextCommandThefeedPostTicker(false, false);
-  // Таймер для скрытия уведомления через 3 секунды если кроме текста сообщения также передали true
-  if (autoHide) {
-    setTimeout(() => {
-      natives__WEBPACK_IMPORTED_MODULE_1__.thefeedRemoveItem(notificationId);
-    }, 3000);
-  }
-}
-//для вызова уведомлений со стороны сервера
-alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('drawNotification', drawNotification);
-
-//уведомления через WebView
-class NotificationManager {
-  //для хранения единственного экземпляра класса
-  //глобальный метод для получение экземпляра класса (информации о состоянии WebView)
-  static getInstance() {
-    if (!this.instance) {
-      // если экземпляр не существует создает его
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('instance создан в первый раз:');
-      this.instance = new NotificationManager();
-    }
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Передан instance:');
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("this.instance: ".concat(JSON.stringify(this.instance, null, '\t')));
-    // возвращает существующий или только что созданный экземпляр
-    return this.instance;
-  }
-  constructor() {
-    //проверка если NotificationManager уже создан ранее то осатльной код constructor не пройдет (по идее таких ситуаций быть не может)
-    if (NotificationManager.instance) {
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Повторный вызов constructor NotificationManager');
-      return NotificationManager.instance;
-    }
-    this.webView = null;
-    this.isInitialized = false;
-    this.isWebViewOpen = false;
-
-    //сохраняет созданный экземпляр
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0421\u043E\u0437\u0434\u0430\u043D\u043D\u044B\u0439 \u044D\u043A\u0437\u0435\u043C\u043F\u043B\u044F\u0440: ".concat(JSON.stringify(this, null, '\t')));
-    NotificationManager.instance = this;
-  }
-  initialize() {
-    var _this = this;
-    return _asyncToGenerator(function* () {
-      // если уже инициализирован, ничего не делает (по идее таких ситуаций быть не может)
-      if (_this.isInitialized) {
-        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('NotificationManager уже инициализирован (ПОВТОРНАЯ ПОПЫТКА ВЫЗОВА INITIALIZE)');
-        return;
-      }
-      // запуск инициализации
-      yield _this.init();
-    })();
-  }
-  init() {
-    var _this2 = this;
-    return _asyncToGenerator(function* () {
-      _this2.webView = new alt_client__WEBPACK_IMPORTED_MODULE_0__.WebView('http://resource/client/html/index.html');
-      var loadPromise = new Promise(resolve => {
-        _this2.webView.once('load', () => resolve(true));
-      });
-      var timeoutPromise = new Promise(resolve => {
-        alt_client__WEBPACK_IMPORTED_MODULE_0__.setTimeout(() => resolve(false), 2000);
-      });
-      //если WebView не загрузится за 2 секунды будет isLoaded = false
-      var isLoaded = yield Promise.race([loadPromise, timeoutPromise]);
-      if (isLoaded) {
-        _this2.isInitialized = true;
-        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Notification manager initialized SUCCESS');
-      } else {
-        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Notification manager did not initialize FAILURE (timeout)');
-      }
-    })();
-  }
-  showPersistent(title, text) {
-    var id = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-    if (!this.isInitialized) {
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Notification manager не инициализирован');
-      return null;
-    }
-    var notificationId = id || "persistent_".concat(Date.now());
-    this.webView.emit('showPersistentNotification', notificationId, title, text);
-    this.isWebViewOpen = true;
-    return notificationId;
-  }
-  hidePersistent(id) {
-    if (this.isInitialized) {
-      this.webView.emit('hidePersistentNotification', id);
-      this.isWebViewOpen = false;
-    } else {
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Попытка скрыть Notification при isInitialized === null');
-      this.isWebViewOpen = false;
-    }
-  }
-}
-
 // Блокировщик транспорта
-_defineProperty(NotificationManager, "instance", null);
 class VehicleBlocker {
   blockVehicleForThreeSeconds(vehicle) {
     return _asyncToGenerator(function* () {
@@ -263,7 +240,7 @@ class VehicleBlocker {
             resolve();
           }, 3000);
         } else {
-          resolve(); // Если транспорт невалиден, сразу разрешаем промис
+          resolve(); // если транспорт невалиден, сразу разрешает промис
           alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Ошибка, неправильный reslove');
         }
       });
@@ -323,7 +300,7 @@ class DeliveryJobClient {
     this.unloadingMarkerType = null; //текущая точка разгрузк
     this.policeColshapes = []; // Массив для хранения колшейпов полиции
 
-    this.state = DeliveryState.SELECTING_POINTS; //текущее состояние системы доставки
+    //this.state = DeliveryState.EMPTY;     //'empty'			нет активного заказа (провален или выполнен)
     this.currentOrder = null; // В будущем класс для конкретного заказа, пока что null что бы не использовать что либо что относится только к конкретному заказау до того как игрок начнет конкретный заказ
 
     // this.vehicleBlocker = new VehicleBlocker(); //для блокировки на разгрузке/погрузке
@@ -363,14 +340,7 @@ class DeliveryJobClient {
     alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initAllowedVehicles', VehHash => {
       this.config.allowedVehicles = VehHash;
     });
-    /*
-    // получение DeliveryState с сервера
-    alt.onServer('initDeliveryState', (deliveryState) => {
-        this.DeliveryState = deliveryState;
-        this.state = this.DeliveryState.SELECTING_POINTS; // инициализируем начальное состояние
-        alt.log('DeliveryState получен и установлен');
-    });
-    */
+
     // при старте заказа приходит с сервера client:startDelivery, и начинается заказ на клиенте
     alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:startDelivery', cargoType => {
       this.startNewOrder(cargoType); //тип груза определяется на сервере
@@ -383,6 +353,10 @@ class DeliveryJobClient {
     //для очистки обработчиков после выхода игрока с сервера
     alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:destroyDeliveryJob', () => {
       this.destroy();
+    });
+    //для смены состояния доставки
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('delivery:stateChanged', state => {
+      this.changeCurrentOrderState(state);
     });
     // визуальный взрыв при провале груза типа danger
     alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer("explode", () => {
@@ -433,6 +407,11 @@ class DeliveryJobClient {
       this.currentOrder = null; //обнуление ссылки
     }
   }
+  changeCurrentOrderState(state) {
+    if (this.currentOrder) {
+      this.currentOrder.changeState(state); //смена состояния для конкретного заказа в DeliveryOrder
+    }
+  }
   //логика на вход в колшейп
   handleEnterColshapeDeliveryJobClient(colshape, entity) {
     var player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;
@@ -463,7 +442,8 @@ class DeliveryOrder {
     this.cargoType = cargoType; //тип груза CommonCargo, HardCargo, DangerCargo, IllegalCargo
     this.config = config; // (все loadingPoints, все unloadingPoints, все allowedVehicles, все policeStations)
     this.policeColshapes = policeColshapes;
-    this.state = DeliveryState.SELECTING_POINTS; // использует константу из DeliveryState 'selecting_points'	изначальное состояние при старте системы
+
+    //this.state = DeliveryState.EMPTY;    //'empty'			нет активного заказа (провален или выполнен)
     this.loadingPoint = null; //текущая точка погрузки
     this.unloadingPoint = null; //текущая точка разгрузки
     this.loadedVehId = null; //сетевой id загруженной машины
@@ -474,12 +454,18 @@ class DeliveryOrder {
       UNLOADING: 'unloading'
     }; // тип точки передается в Pointbase (и нигде не используется)
   }
+
+  //смена текщего состояния доставки
+  changeState(state) {
+    this.state = state;
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0418\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F this.state \u043D\u0430 ".concat(this.state));
+  }
   start() {
-    var _this3 = this;
+    var _this = this;
     return _asyncToGenerator(function* () {
-      yield _this3.selectPoints();
-      _this3.createLoadingPoint();
-      _this3.state = DeliveryState.WAITING_FOR_LOADING; //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
+      yield _this.selectPoints();
+      _this.createLoadingPoint();
+      //this.state = DeliveryState.WAITING_FOR_LOADING;   //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
     })();
   }
   selectPoints() {
@@ -497,13 +483,13 @@ class DeliveryOrder {
   }
   // Проверка расстояния от выбранной точки разгрузки до полицейских участков
   distanceFromPoliceStations() {
-    var _this4 = this;
+    var _this2 = this;
     return _asyncToGenerator(function* () {
       var minDistance = 350;
 
       // unloadingPoint в Vector3 для расчета расстояния
-      var unloadingPos = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(_this4.unloadingPoint.x, _this4.unloadingPoint.y, _this4.unloadingPoint.z);
-      var isTooClose = _this4.config.policeStations.some(station => {
+      var unloadingPos = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(_this2.unloadingPoint.x, _this2.unloadingPoint.y, _this2.unloadingPoint.z);
+      var isTooClose = _this2.config.policeStations.some(station => {
         var stationPos = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(station.x, station.y, station.z);
         var distance = unloadingPos.distanceTo(stationPos);
         alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0420\u0430\u0441\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0434\u043E \u043F\u043E\u043B\u0438\u0446\u0435\u0439\u0441\u043A\u043E\u0433\u043E \u0443\u0447\u0430\u0441\u0442\u043A\u0430 ".concat(station.name, ": ").concat(distance));
@@ -512,8 +498,8 @@ class DeliveryOrder {
       if (isTooClose) {
         // Перевыбираем точку разгрузки, не меняя точки погрузки
         alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0422\u043E\u0447\u043A\u0430 \u0440\u0430\u0437\u0433\u0440\u0443\u0437\u043A\u0438 \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0431\u043B\u0438\u0437\u043A\u043E \u043A \u043F\u043E\u043B\u0438\u0446\u0438\u0438, \u0432\u044B\u0431\u0438\u0440\u0430\u0435\u043D\u0442\u0441\u044F \u043D\u043E\u0432\u0430\u044F...");
-        _this4.unloadingPoint = _this4.config.unloadingPoints[Math.floor(Math.random() * _this4.config.unloadingPoints.length)];
-        _this4.distanceFromPoliceStations(); // Рекурсивная проверка
+        _this2.unloadingPoint = _this2.config.unloadingPoints[Math.floor(Math.random() * _this2.config.unloadingPoints.length)];
+        _this2.distanceFromPoliceStations(); // Рекурсивная проверка
         //если вдруг будет в конфиге слишком много точек близко к полиции что бы были временные промежутки между проверками (+ можно доавбить ограничение на количество повторных выборов точки разгрузки)
         yield new Promise(resolve => alt_client__WEBPACK_IMPORTED_MODULE_0__.setTimeout(resolve, 10));
       }
@@ -572,36 +558,36 @@ class DeliveryOrder {
   }
   //процесс погрзки (после проверки на соблюдение всех необходимых для нее требований)
   executeLoading(vehicle) {
-    var _this5 = this;
+    var _this3 = this;
     return _asyncToGenerator(function* () {
       var vehicleBlocker = new VehicleBlocker();
-      drawNotification('Начало погрузки...', true); //true значит что уведмоление пропадет через 3 чекунды
+      NotificationManager.getInstance().drawNotification('Начало погрузки...', true); //true значит что уведмоление пропадет через 3 чекунды
       yield vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
 
-      _this5.loadedVehId = vehicle.id;
-      _this5.loadingPoint.pointVisuals.destroy();
-      _this5.createUnloadingPoint();
-      _this5.state = DeliveryState.DELIVERING; //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+      _this3.loadedVehId = vehicle.id;
+      _this3.loadingPoint.pointVisuals.destroy();
+      _this3.createUnloadingPoint();
+      //this.state = DeliveryState.DELIVERING  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
 
-      drawNotification("\u041F\u043E\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430! \u0413\u0440\u0443\u0437: ".concat(_this5.cargoType));
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:startLoading', _this5.loadedVehId); //передает на сервер что игрок погрузил груз
+      NotificationManager.getInstance().drawNotification("\u041F\u043E\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430! \u0413\u0440\u0443\u0437: ".concat(_this3.cargoType));
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:startLoading', _this3.loadedVehId); //передает на сервер что игрок погрузил груз
     })();
   }
   //процесс разгрузки (после проверки на соблюдение всех необходимых для нее требований)
   executeUnloading(vehicle) {
-    var _this6 = this;
+    var _this4 = this;
     return _asyncToGenerator(function* () {
       var vehicleBlocker = new VehicleBlocker();
-      drawNotification('Начало разгрузки...', true); //true значит что уведмоление пропадет через 3 чекунды
+      NotificationManager.getInstance().drawNotification('Начало разгрузки...', true); //true значит что уведмоление пропадет через 3 чекунды
       yield vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
 
-      _this6.loadedVehId = null;
-      _this6.unloadingPoint.pointVisuals.destroy();
-      _this6.state = DeliveryState.EMPTY; //'empty'			нет активного заказа (провален или выполнен)
+      _this4.loadedVehId = null;
+      _this4.unloadingPoint.pointVisuals.destroy();
+      //this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
 
       alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:completeDelivery');
-      drawNotification("\u0414\u043E\u0441\u0442\u0430\u0432\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430! \u0413\u0440\u0443\u0437: ".concat(_this6.cargoType));
-      _this6.deliveryJobClient.currentOrder = null;
+      NotificationManager.getInstance().drawNotification("\u0414\u043E\u0441\u0442\u0430\u0432\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430! \u0413\u0440\u0443\u0437: ".concat(_this4.cargoType));
+      _this4.deliveryJobClient.currentOrder = null;
     })();
   }
   cancel() {
@@ -610,14 +596,14 @@ class DeliveryOrder {
       //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
       this.loadingPoint.cleanup();
       this.loadingPoint.pointVisuals.destroy();
-      this.state = DeliveryState.EMPTY; //'empty'			нет активного заказа (провален или выполнен)
+      //this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
     }
     if (this.state === DeliveryState.DELIVERING) {
       //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
       this.unloadingPoint.cleanup();
       this.unloadingPoint.pointVisuals.destroy();
       this.loadedVehId = null;
-      this.state = DeliveryState.EMPTY; //'empty'			нет активного заказа (провален или выполнен)
+      //this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
     }
 
     // обнуление в родители
@@ -643,7 +629,7 @@ class PointBase {
 
     // проверка на разрешенные модели авто
     if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) {
-      drawNotification('Транспорт не подходит для перевозки');
+      NotificationManager.getInstance().drawNotification('Транспорт не подходит для перевозки');
       return;
     }
     NotificationManager.getInstance().showPersistent("Погрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать погрузку");
@@ -663,13 +649,13 @@ class PointBase {
         NotificationManager.getInstance().hidePersistent(); //скрыть WebView
         if (!player.vehicle) {
           // если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
-          drawNotification('Вы не находитесь в транспорте');
+          NotificationManager.getInstance().drawNotification('Вы не находитесь в транспорте');
           return;
         }
         if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) {
           // снова проверка на правильное авто (вдруг игрок заехал в колшейп на правильном авто и невыходя из колшейпа пересел в неправильное авто)
           alt_client__WEBPACK_IMPORTED_MODULE_0__.log("Vehicle ".concat(player.vehicle.model, " is not allowed"));
-          drawNotification('Неправильное авто');
+          NotificationManager.getInstance().drawNotification('Неправильное авто');
           return;
         }
         alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Началась погрузка');
@@ -688,7 +674,7 @@ class PointBase {
 
     // проверка что это тот же транспорт что и был загружке
     if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {
-      drawNotification('Это не тот транспорт, в который был загружен груз');
+      NotificationManager.getInstance().drawNotification('Это не тот транспорт, в который был загружен груз');
       return;
     }
     NotificationManager.getInstance().showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
@@ -701,12 +687,12 @@ class PointBase {
         //проверку ниже можно убрать, так как если игрок вышел из авто и/или пересел в другую машину ему это не даст никакого приемущества (но для логики игрового процесса стоит остаивть)
         if (!player.vehicle) {
           // Если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
-          drawNotification('Вы не находитесь в транспорте');
+          NotificationManager.getInstance().drawNotification('Вы не находитесь в транспорте');
           return;
         }
         if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {
           //если игрок заехал на загруженном транспорте, но не выходя из колшейпа пересел в другое авто (проверка для того что бы не нарушалась логика игрового процесса) 
-          drawNotification('Это не тот транспорт, в который был загружен груз');
+          NotificationManager.getInstance().drawNotification('Это не тот транспорт, в который был загружен груз');
           return;
         }
         alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Началась разгрузка');

@@ -2,108 +2,6 @@ import * as alt from 'alt-client';
 import * as native from "natives";
 //import { DeliveryState } from '@shared/Consts.js';
 
-
-//вызов гташных уведмолени с помощью нативок 
-function drawNotification(message, autoHide = false) {
-    native.beginTextCommandThefeedPost('STRING');
-    native.addTextComponentSubstringPlayerName(message);
-    const notificationId = native.endTextCommandThefeedPostTicker(false, false);
-    // Таймер для скрытия уведомления через 3 секунды если кроме текста сообщения также передали true
-    if (autoHide) {
-        setTimeout(() => {
-            native.thefeedRemoveItem(notificationId);
-        }, 3000);
-    }
-}
-//для вызова уведомлений со стороны сервера
-alt.onServer('drawNotification', drawNotification);
-
-//уведомления через WebView
-class NotificationManager {
-    static instance = null;    //для хранения единственного экземпляра класса
-    //глобальный метод для получение экземпляра класса (информации о состоянии WebView)
-    static getInstance() {
-        if (!this.instance) {   // если экземпляр не существует создает его
-            alt.log('instance создан в первый раз:');
-            this.instance = new NotificationManager();
-        }
-        alt.log('Передан instance:');
-        alt.log(`this.instance: ${JSON.stringify(this.instance, null, '\t')}`);
-        // возвращает существующий или только что созданный экземпляр
-        return this.instance;
-    }
-
-    constructor() {
-        //проверка если NotificationManager уже создан ранее то осатльной код constructor не пройдет (по идее таких ситуаций быть не может)
-        if (NotificationManager.instance) {
-            alt.log('Повторный вызов constructor NotificationManager');
-            return NotificationManager.instance;
-        }
-        
-        this.webView = null;
-        this.isInitialized = false;
-        this.isWebViewOpen = false;
-
-        //сохраняет созданный экземпляр
-        alt.log(`Созданный экземпляр: ${JSON.stringify(this, null, '\t')}`);
-        NotificationManager.instance = this;
-    }
-    
-    async initialize() {
-        // если уже инициализирован, ничего не делает (по идее таких ситуаций быть не может)
-        if (this.isInitialized) {
-            alt.log('NotificationManager уже инициализирован (ПОВТОРНАЯ ПОПЫТКА ВЫЗОВА INITIALIZE)');
-            return;
-        }
-        // запуск инициализации
-        await this.init();
-    }
-
-    async init() {
-        this.webView = new alt.WebView('http://resource/client/html/index.html');
-
-            const loadPromise = new Promise((resolve) => {
-                this.webView.once('load', () => resolve(true));
-            });
-            
-            const timeoutPromise = new Promise((resolve) => {
-                alt.setTimeout(() => resolve(false), 2000);
-            });
-            //если WebView не загрузится за 2 секунды будет isLoaded = false
-            const isLoaded = await Promise.race([loadPromise, timeoutPromise]);
-            
-            if (isLoaded) {
-                this.isInitialized = true;
-                alt.log('Notification manager initialized SUCCESS');
-            } else {
-                alt.log('Notification manager did not initialize FAILURE (timeout)');
-            }
-    }
-
-    showPersistent(title, text, id = null) {
-        if (!this.isInitialized) {
-            alt.log('Notification manager не инициализирован');
-            return null;
-        }
-        
-        const notificationId = id || `persistent_${Date.now()}`;
-        this.webView.emit('showPersistentNotification', notificationId, title, text);
-        this.isWebViewOpen = true;
-        return notificationId;
-    }
-    
-    hidePersistent(id) {
-        if (this.isInitialized) {
-            this.webView.emit('hidePersistentNotification', id);
-            this.isWebViewOpen = false;
-        }
-        else{
-            alt.log('Попытка скрыть Notification при isInitialized === null');
-            this.isWebViewOpen = false;
-        }
-    }
-}
-
 // Блокировщик транспорта
 class VehicleBlocker {
     async blockVehicleForThreeSeconds(vehicle) {
@@ -115,14 +13,13 @@ class VehicleBlocker {
                     resolve();
                 }, 3000);
             } else {
-                resolve(); // Если транспорт невалиден, сразу разрешаем промис
+                resolve(); // если транспорт невалиден, сразу разрешает промис
                 alt.log('Ошибка, неправильный reslove')
             }
         });
 
     }
 }
-
 
 // Класс для создания и уничтожения визуальных элементов точки
 class PointVisuals {
@@ -191,7 +88,7 @@ class DeliveryJobClient {
         this.unloadingMarkerType = null;    //текущая точка разгрузк
         this.policeColshapes = []; // Массив для хранения колшейпов полиции
         
-        this.state = DeliveryState.SELECTING_POINTS;     //текущее состояние системы доставки
+        //this.state = DeliveryState.EMPTY;     //'empty'			нет активного заказа (провален или выполнен)
         this.currentOrder = null;   // В будущем класс для конкретного заказа, пока что null что бы не использовать что либо что относится только к конкретному заказау до того как игрок начнет конкретный заказ
 
        // this.vehicleBlocker = new VehicleBlocker(); //для блокировки на разгрузке/погрузке
@@ -232,14 +129,7 @@ class DeliveryJobClient {
         alt.onServer('initAllowedVehicles', (VehHash) => {
             this.config.allowedVehicles = VehHash;
         });
-        /*
-        // получение DeliveryState с сервера
-        alt.onServer('initDeliveryState', (deliveryState) => {
-            this.DeliveryState = deliveryState;
-            this.state = this.DeliveryState.SELECTING_POINTS; // инициализируем начальное состояние
-            alt.log('DeliveryState получен и установлен');
-        });
-        */
+       
         // при старте заказа приходит с сервера client:startDelivery, и начинается заказ на клиенте
         alt.onServer('client:startDelivery', (cargoType) => {
             this.startNewOrder(cargoType);  //тип груза определяется на сервере
@@ -252,6 +142,10 @@ class DeliveryJobClient {
         //для очистки обработчиков после выхода игрока с сервера
         alt.onServer('client:destroyDeliveryJob',() => {
             this.destroy();
+        });
+        //для смены состояния доставки
+        alt.onServer('delivery:stateChanged', (state) => {
+            this.changeCurrentOrderState(state);
         });
         // визуальный взрыв при провале груза типа danger
         alt.onServer("explode",() =>{
@@ -307,6 +201,12 @@ class DeliveryJobClient {
             this.currentOrder = null;   //обнуление ссылки
         }
     }
+
+    changeCurrentOrderState(state){
+        if (this.currentOrder) {
+            this.currentOrder.changeState(state); //смена состояния для конкретного заказа в DeliveryOrder
+        }
+    }
     //логика на вход в колшейп
     handleEnterColshapeDeliveryJobClient(colshape, entity) {
         const player = alt.Player.local;
@@ -340,7 +240,7 @@ class DeliveryOrder {
         this.policeColshapes = policeColshapes;
 
         
-        this.state = DeliveryState.SELECTING_POINTS;    // использует константу из DeliveryState 'selecting_points'	изначальное состояние при старте системы
+        //this.state = DeliveryState.EMPTY;    //'empty'			нет активного заказа (провален или выполнен)
         this.loadingPoint = null;   //текущая точка погрузки
         this.unloadingPoint = null; //текущая точка разгрузки
         this.loadedVehId = null;    //сетевой id загруженной машины
@@ -349,10 +249,16 @@ class DeliveryOrder {
         this.pointBaseType = {LOADING: 'loading', UNLOADING: 'unloading'}; // тип точки передается в Pointbase (и нигде не используется)
     }
 
+    //смена текщего состояния доставки
+    changeState(state) {
+        this.state = state;
+        alt.log(`Изменился this.state на ${this.state}`);
+    }
+
     async start() {
         await this.selectPoints();
         this.createLoadingPoint();
-        this.state = DeliveryState.WAITING_FOR_LOADING;   //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
+        //this.state = DeliveryState.WAITING_FOR_LOADING;   //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
     }
 
     selectPoints() {
@@ -446,32 +352,32 @@ class DeliveryOrder {
     //процесс погрзки (после проверки на соблюдение всех необходимых для нее требований)
     async executeLoading(vehicle) {
         const vehicleBlocker = new VehicleBlocker();
-        drawNotification('Начало погрузки...', true);   //true значит что уведмоление пропадет через 3 чекунды
+        NotificationManager.getInstance().drawNotification('Начало погрузки...', true);   //true значит что уведмоление пропадет через 3 чекунды
         await vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
 
         this.loadedVehId = vehicle.id;
 
         this.loadingPoint.pointVisuals.destroy();
         this.createUnloadingPoint();
-        this.state = DeliveryState.DELIVERING  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+        //this.state = DeliveryState.DELIVERING  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
         
-        drawNotification(`Погрузка завершена! Груз: ${this.cargoType}`);
+        NotificationManager.getInstance().drawNotification(`Погрузка завершена! Груз: ${this.cargoType}`);
         alt.emitServer('client:startLoading', this.loadedVehId);    //передает на сервер что игрок погрузил груз
 
     }
     //процесс разгрузки (после проверки на соблюдение всех необходимых для нее требований)
     async executeUnloading(vehicle) {
         const vehicleBlocker = new VehicleBlocker();
-        drawNotification('Начало разгрузки...', true);   //true значит что уведмоление пропадет через 3 чекунды
+        NotificationManager.getInstance().drawNotification('Начало разгрузки...', true);   //true значит что уведмоление пропадет через 3 чекунды
         await vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
 
         this.loadedVehId = null;
 
         this.unloadingPoint.pointVisuals.destroy();
-        this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
+        //this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
         
         alt.emitServer('client:completeDelivery');
-        drawNotification(`Доставка завершена! Груз: ${this.cargoType}`);
+        NotificationManager.getInstance().drawNotification(`Доставка завершена! Груз: ${this.cargoType}`);
 
         this.deliveryJobClient.currentOrder = null;
 
@@ -482,13 +388,13 @@ class DeliveryOrder {
         if (this.state === DeliveryState.WAITING_FOR_LOADING) { //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
             this.loadingPoint.cleanup();
             this.loadingPoint.pointVisuals.destroy();
-            this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
+            //this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
         }
         if (this.state === DeliveryState.DELIVERING) {  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
             this.unloadingPoint.cleanup();
             this.unloadingPoint.pointVisuals.destroy();
             this.loadedVehId = null;
-            this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
+            //this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
         }
         
         // обнуление в родители
@@ -515,7 +421,7 @@ class PointBase {
         
         // проверка на разрешенные модели авто
         if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) {
-            drawNotification('Транспорт не подходит для перевозки');
+            NotificationManager.getInstance().drawNotification('Транспорт не подходит для перевозки');
             return;
         }
 
@@ -536,12 +442,12 @@ class PointBase {
                 this.cleanup();
                 NotificationManager.getInstance().hidePersistent();   //скрыть WebView
                 if (!player.vehicle) {  // если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
-                        drawNotification('Вы не находитесь в транспорте');
+                        NotificationManager.getInstance().drawNotification('Вы не находитесь в транспорте');
                         return;
                 }
                 if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) { // снова проверка на правильное авто (вдруг игрок заехал в колшейп на правильном авто и невыходя из колшейпа пересел в неправильное авто)
                     alt.log(`Vehicle ${player.vehicle.model} is not allowed`);
-                    drawNotification('Неправильное авто');
+                    NotificationManager.getInstance().drawNotification('Неправильное авто');
                     return;
                 }
                 alt.log('Началась погрузка');
@@ -560,7 +466,7 @@ class PointBase {
 
         // проверка что это тот же транспорт что и был загружке
         if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {
-            drawNotification('Это не тот транспорт, в который был загружен груз');
+            NotificationManager.getInstance().drawNotification('Это не тот транспорт, в который был загружен груз');
             return;
         }
 
@@ -574,11 +480,11 @@ class PointBase {
                 NotificationManager.getInstance().hidePersistent();    //скрыть WebView
                 //проверку ниже можно убрать, так как если игрок вышел из авто и/или пересел в другую машину ему это не даст никакого приемущества (но для логики игрового процесса стоит остаивть)
                 if (!player.vehicle) {  // Если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
-                        drawNotification('Вы не находитесь в транспорте');
+                        NotificationManager.getInstance().drawNotification('Вы не находитесь в транспорте');
                         return;
                 }
                 if (this.deliveryOrder.loadedVehId !== player.vehicle.id) { //если игрок заехал на загруженном транспорте, но не выходя из колшейпа пересел в другое авто (проверка для того что бы не нарушалась логика игрового процесса) 
-                    drawNotification('Это не тот транспорт, в который был загружен груз');
+                    NotificationManager.getInstance().drawNotification('Это не тот транспорт, в который был загружен груз');
                 return;
                 }
                 alt.log('Началась разгрузка');

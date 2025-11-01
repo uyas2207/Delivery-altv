@@ -15,9 +15,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
+/* harmony import */ var _serverNotification_serverNotificationManager_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../serverNotification/serverNotificationManager.js */ "./server/serverNotification/serverNotificationManager.js");
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 //для работы функицй alt.
+
+ //для вызова уведмолений
 
 class CargoBase {
   constructor(type, reward, reason) {
@@ -35,12 +38,12 @@ class CargoBase {
   }
   //общая логика для успешного завершения
   onSuccessfulDelivery(player) {
-    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'drawNotification', "+".concat(this.reward, "$"));
+    _serverNotification_serverNotificationManager_js__WEBPACK_IMPORTED_MODULE_1__.NotificationManager.showNotify(player, "+".concat(this.reward, "$"));
   }
   //общая логика для провала
   onDeliveryFailed(player) {
-    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'drawNotification', "".concat(this.reason));
-    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'drawNotification', 'заказ отменен!');
+    _serverNotification_serverNotificationManager_js__WEBPACK_IMPORTED_MODULE_1__.NotificationManager.showNotify(player, "".concat(this.reason));
+    _serverNotification_serverNotificationManager_js__WEBPACK_IMPORTED_MODULE_1__.NotificationManager.showNotify(player, 'заказ отменен!');
   }
 }
 //передается CargoBase для файлов которые будут использовать import CargoBase from './CargoBase.js'
@@ -58,14 +61,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   CommonCargo: () => (/* binding */ CommonCargo)
 /* harmony export */ });
-/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
-/* harmony import */ var _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./CargoBase.js */ "./server/cargo/CargoBase.js");
-//для работы функицй alt.
-//в этом файле такие функции не используются но вдруг в будущем будет добавлена еще логика и возникнет необходимость в altv функционале
-
+/* harmony import */ var _CargoBase_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./CargoBase.js */ "./server/cargo/CargoBase.js");
 //Берется базовая логика типа груза из shared\cargo /CargoBase.js
 
-class CommonCargo extends _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__["default"] {
+class CommonCargo extends _CargoBase_js__WEBPACK_IMPORTED_MODULE_0__["default"] {
   constructor() {
     super('Common', 1000, null); //type, reward, reason
   }
@@ -193,6 +192,28 @@ class IllegalCargo extends _CargoBase_js__WEBPACK_IMPORTED_MODULE_1__["default"]
 
 /***/ }),
 
+/***/ "./server/serverNotification/serverNotificationManager.js":
+/*!****************************************************************!*\
+  !*** ./server/serverNotification/serverNotificationManager.js ***!
+  \****************************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   NotificationManager: () => (/* binding */ NotificationManager)
+/* harmony export */ });
+/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
+// менеджер уведомлений на сервере
+
+class NotificationManager {
+  static showNotify(player, text) {
+    var autoHide = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(player, 'notification.notify', text, autoHide);
+  }
+}
+
+/***/ }),
+
 /***/ "./shared/Consts.js":
 /*!**************************!*\
   !*** ./shared/Consts.js ***!
@@ -203,23 +224,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   DeliveryState: () => (/* binding */ DeliveryState)
 /* harmony export */ });
+// значение DeliveryState для клиента и сервера
 var DeliveryState = {
   EMPTY: 'empty',
   //'empty'			нет активного заказа (провален или выполнен)
-  SELECTING_POINTS: 'selecting_points',
-  ///'selecting_points'	изначальное состояние при старте системы на клиенте
   WAITING_FOR_LOADING: 'waiting_for_loading',
   //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
-  DELIVERING: 'delivering',
-  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
-  ACTIVE: 'active',
-  //используется только на сервере, показывает что заказ только что начался
-  COMPLETED: 'completed',
-  // используется только на сервере без функционала (нужно для деабага)
-  CANCELLED: 'cancelled',
-  // используется только на сервере без функционала (нужно для деабага)
-  FAILED: 'failed' // используется только на сервере без функционала (нужно для деабага)
+  DELIVERING: 'delivering' //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
 };
+//globalThis.DeliveryState = DeliveryState;   //делает переменную глобавльной
 
 /***/ }),
 
@@ -498,48 +511,53 @@ class DeliveryJob {
     this.cargo = null; // текущий тип заказа
     this.loadedVehId = null; //id загруженнного автомобился
     this.cargoTypes = this.configManager.getCargoTypes(); // Получаем типы грузов из configManager
-    this.state = _shared_Consts_js__WEBPACK_IMPORTED_MODULE_8__.DeliveryState.EMPTY; // empty, loading, delivering, completed, cancelled
+    this.state = _shared_Consts_js__WEBPACK_IMPORTED_MODULE_8__.DeliveryState.EMPTY;
     this.damageHandlingInProgress = false; // для единоразовой обработки урона
+  }
+  //метод для смены сосотояния текщей доставки
+  setState(newState) {
+    this.state = newState;
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.log("\u0418\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F this.state \u043D\u0430 ".concat(this.state));
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'delivery:stateChanged', newState); //смена состояния заказа на клиенте
   }
   start() {
     var CargoClass = this.cargoTypes[Math.floor(Math.random() * this.cargoTypes.length)];
     this.cargo = new CargoClass();
-    this.state = _shared_Consts_js__WEBPACK_IMPORTED_MODULE_8__.DeliveryState.ACTIVE; //показывает что заказ только что начался
-
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log("\u0412\u044B\u0431\u0440\u0430\u043D \u0442\u0438\u043F \u0433\u0440\u0443\u0437\u0430: ".concat(this.cargo.type));
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'client:startDelivery', this.cargo.type);
+    this.setState(_shared_Consts_js__WEBPACK_IMPORTED_MODULE_8__.DeliveryState.WAITING_FOR_LOADING); //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
   }
 
   //запоминает loadedVehId
   Loaded(loadedVehId) {
     this.loadedVehId = loadedVehId;
-    this.state = _shared_Consts_js__WEBPACK_IMPORTED_MODULE_8__.DeliveryState.DELIVERING; //автомобиль был загружен и едет до точки разгрузки, для проверок урона
+    this.setState(_shared_Consts_js__WEBPACK_IMPORTED_MODULE_8__.DeliveryState.DELIVERING); //автомобиль был загружен и едет до точки разгрузки, для проверок урона
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Loaded vehicle: ".concat(loadedVehId));
   }
 
   // выдает награду
   complete() {
-    this.state = _shared_Consts_js__WEBPACK_IMPORTED_MODULE_8__.DeliveryState.COMPLETED; // пока что не используется, но для дебага и для возможных расширений в коде
     this.cargo.onSuccessfulDelivery(this.player); // выдает награду
     this.loadedVehId = null;
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Delivery completed for ".concat(this.player.id));
+    this.setState(_shared_Consts_js__WEBPACK_IMPORTED_MODULE_8__.DeliveryState.EMPTY); //'empty'			нет активного заказа (провален или выполнен)
   }
 
   // отменяет текущий заказ
   cancel() {
-    this.state = _shared_Consts_js__WEBPACK_IMPORTED_MODULE_8__.DeliveryState.CANCELLED; // пока что не используется, но для дебага и для возможных расширений в коде
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'client:cancelDelivery');
     this.loadedVehId = null;
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Delivery cancelled for ".concat(this.player.id));
+    this.setState(_shared_Consts_js__WEBPACK_IMPORTED_MODULE_8__.DeliveryState.EMPTY); //'empty'			нет активного заказа (провален или выполнен)
   }
 
   // отменяет текущий заказ + отправляет уведомление с причиной провала
   fail() {
-    this.state = _shared_Consts_js__WEBPACK_IMPORTED_MODULE_8__.DeliveryState.FAILED; // пока что не используется, но для дебага и для возможных расширений в коде
     this.cargo.onDeliveryFailed(this.player);
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'client:cancelDelivery');
     this.loadedVehId = null;
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Delivery failed for ".concat(this.player.id));
+    this.setState(_shared_Consts_js__WEBPACK_IMPORTED_MODULE_8__.DeliveryState.EMPTY); //'empty'			нет активного заказа (провален или выполнен)
   }
   handleDamage(vehicle, attacker) {
     var _this2 = this;
@@ -560,5 +578,7 @@ class DeliveryJob {
 
 //new DeliveryJob();
 new DeliveryJobSystem();
+
+//alt.emitClient(player, 'delivery:stateChanged', state);
 })();
 
