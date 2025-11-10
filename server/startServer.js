@@ -43,7 +43,7 @@ class DeliveryJobSystem {
         });
 
         //единственный способ начать доставку /randomload
-        chat.registerCmd("]", (player) => {
+        chat.registerCmd("randomload", (player) => {
             this.startNewOrder(player);
         });
         chat.registerCmd("cancelorder", (player) => {
@@ -100,7 +100,6 @@ class DeliveryJobSystem {
         const order = this.activeOrders.get(attacker.id);
         if (order && order.loadedVehId === vehicle.id) {    //проверка что урон был получеен машиной в которую погружен заказ
             alt.log(`авто получило урон после проверок на загруженный автомобиль`);
-            alt.log(`order.loadedVehId: ${ order.loadedVehId}`);
             await order.handleDamage(vehicle, attacker);
         }
     }
@@ -108,5 +107,3 @@ class DeliveryJobSystem {
 
 //new DeliveryJob();
 new DeliveryJobSystem();
-
-//alt.emitClient(player, 'delivery:stateChanged', state);
