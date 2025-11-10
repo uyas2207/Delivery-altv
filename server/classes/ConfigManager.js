@@ -4,10 +4,10 @@ import * as fs from 'fs';
 //для работы с путями файлов
 import * as path from 'path';
 
-import { CommonCargo } from './cargo/CommonCargo.js';
-import { DangerCargo } from './cargo/DangerCargo.js';
-import { HardCargo } from './cargo/HardCargo.js';
-import { IllegalCargo } from './cargo/IllegalCargo.js';
+import { CommonCargo } from '@cargo/CommonCargo';
+import { DangerCargo } from '@cargo/DangerCargo';
+import { HardCargo } from '@cargo/HardCargo';
+import { IllegalCargo } from '@cargo/IllegalCargo';
 
 //для работы с данными из конфига
 export class ConfigManager {
@@ -26,10 +26,10 @@ export class ConfigManager {
             const configData = fs.readFileSync(configPath, 'utf8');
             const fullConfig = JSON.parse(configData);  //получение всех данных из конфига
             // Разделение конфига на отдельные части
-            this.loadingPoints = fullConfig.points?.loading || [];
-            this.unloadingPoints = fullConfig.points?.unloading || [];
-            this.policeStations = fullConfig.policeStations || [];
-            this.allowedVehicles = fullConfig.transport?.allowedVehicles || [];
+            this.loadingPoints = fullConfig.points?.loading;
+            this.unloadingPoints = fullConfig.points?.unloading;
+            this.policeStations = fullConfig.policeStations;
+            this.allowedVehicles = fullConfig.transport?.allowedVehicles;
 
             alt.log(`Config loaded: ${this.loadingPoints.length} loading, ${this.unloadingPoints.length} unloading points`);
     }

@@ -524,6 +524,80 @@ _defineProperty(NotificationManager, "instance", null);
 
 /***/ }),
 
+/***/ "./client/events/ClientEvents.js":
+/*!***************************************!*\
+  !*** ./client/events/ClientEvents.js ***!
+  \***************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   ClientEvents: () => (/* binding */ ClientEvents)
+/* harmony export */ });
+/* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ "alt-client");
+/* harmony import */ var natives__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! natives */ "natives");
+
+
+class ClientEvents {
+  static setupClientEvents(deliveryJobClient) {
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('2. Инициализация системы доставки.');
+    // получение данных из конфига с сервера
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initLoadingPoints', points => {
+      deliveryJobClient.config.loadingPoints = points;
+    });
+    // получение данных из конфига с сервера
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initUnloadingPoints', points => {
+      deliveryJobClient.config.unloadingPoints = points;
+    });
+    // получение данных из конфига с сервера
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initPoliceStations', points => {
+      deliveryJobClient.config.policeStations = points;
+      deliveryJobClient.createPoliceBlipsColshapes(); //сразу при входе на сервер будет точка погрузки 
+    });
+    // получение данных из конфига с сервера
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initAllowedVehicles', VehHash => {
+      deliveryJobClient.config.allowedVehicles = VehHash;
+    });
+    // при старте заказа приходит с сервера client:startDelivery, и начинается заказ на клиенте
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:startDelivery', cargoType => {
+      deliveryJobClient.startNewOrder(cargoType); //тип груза определяется на сервере
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log("cargoType ".concat(cargoType));
+    });
+    // нужно для очистки информации о грузе при провале доставки
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:cancelDelivery', () => {
+      deliveryJobClient.cancelCurrentOrder();
+    });
+    //для очистки обработчиков после выхода игрока с сервера
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:destroyDeliveryJob', () => {
+      deliveryJobClient.destroy();
+    });
+    //для смены состояния доставки
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('delivery:stateChanged', state => {
+      deliveryJobClient.changeCurrentOrderState(state);
+    });
+    // визуальный взрыв при провале груза типа danger
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer("explode", () => {
+      var player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;
+      natives__WEBPACK_IMPORTED_MODULE_1__.addExplosion(player.vehicle.pos.x, player.vehicle.pos.y, player.vehicle.pos.z, 9,
+      // тип взрыва (9 - Vehicle)
+      5.0,
+      // радиус
+      true,
+      // звук
+      false,
+      // невидимый огонь
+      0.0,
+      // камера shake
+      true);
+    });
+    // Обработка входа/выхода из колшейпов
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('entityEnterColshape', deliveryJobClient.handleEnterColshapeDeliveryJobClient.bind(deliveryJobClient));
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('entityLeaveColshape', deliveryJobClient.handleLeaveColshapeDeliveryJobClient.bind(deliveryJobClient));
+  }
+}
+
+/***/ }),
+
 /***/ "./shared/Consts.js":
 /*!**************************!*\
   !*** ./shared/Consts.js ***!
@@ -540,7 +614,7 @@ var DeliveryState = {
   //'empty'			нет активного заказа (провален или выполнен)
   WAITING_FOR_LOADING: 'waiting_for_loading',
   //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
-  DELIVERING: 'delivering' //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+  DELIVERING: 'delivering' //'delivering'		после момента погрузки до момента разгрузки (активна точка разгрузки)
 };
 //globalThis.DeliveryState = DeliveryState;   //делает переменную глобавльной
 
@@ -630,19 +704,16 @@ var __webpack_exports__ = {};
   \*******************************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ "alt-client");
-/* harmony import */ var natives__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! natives */ "natives");
-/* harmony import */ var _classes_PointVisuals__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @classes/PointVisuals */ "./client/classes/PointVisuals.js");
-/* harmony import */ var _classes_DeliveryOrder__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @classes/DeliveryOrder */ "./client/classes/DeliveryOrder.js");
+/* harmony import */ var _classes_PointVisuals__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @classes/PointVisuals */ "./client/classes/PointVisuals.js");
+/* harmony import */ var _classes_DeliveryOrder__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @classes/DeliveryOrder */ "./client/classes/DeliveryOrder.js");
+/* harmony import */ var _events_ClientEvents_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./events/ClientEvents.js */ "./client/events/ClientEvents.js");
 /* provided dependency */ var NotificationManager = __webpack_require__(/*! ./client/classes/clientNotificationManager.js */ "./client/classes/clientNotificationManager.js")["default"];
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 
 
 
-//import { NotificationManager } from '@classes/clientNotificationManager';
 
-
-//import { DeliveryState } from '@shared/Consts.js';
 
 // Общая система управления доставкой создается при подключении игрока
 class DeliveryJobClient {
@@ -657,14 +728,9 @@ class DeliveryJobClient {
     this.loadingMarkerType = null; //текщая точка погрузки
     this.unloadingMarkerType = null; //текущая точка разгрузк
     this.policeColshapes = []; // Массив для хранения колшейпов полиции
-
-    //this.state = DeliveryState.EMPTY;     //'empty'			нет активного заказа (провален или выполнен)
     this.currentOrder = null; // В будущем класс для конкретного заказа, пока что null что бы не использовать что либо что относится только к конкретному заказау до того как игрок начнет конкретный заказ
 
-    // this.vehicleBlocker = new VehicleBlocker(); //для блокировки на разгрузке/погрузке
-
     this.initializeNotificationManager();
-    this.init();
   }
 
   // метод для инициализации NotificationManager
@@ -679,66 +745,11 @@ class DeliveryJobClient {
       alt_client__WEBPACK_IMPORTED_MODULE_0__.log('1. NotificationManager инициализирован через DeliveryJobClient');
     })();
   }
-  init() {
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('2. Инициализация системы доставки.');
-    // получение данных из конфига с сервера
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initLoadingPoints', points => {
-      this.config.loadingPoints = points;
-    });
-    // получение данных из конфига с сервера
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initUnloadingPoints', points => {
-      this.config.unloadingPoints = points;
-    });
-    // получение данных из конфига с сервера
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initPoliceStations', points => {
-      this.config.policeStations = points;
-      this.createPoliceBlipsColshapes(); //сразу при входе на сервер будет точка погрузки 
-    });
-    // получение данных из конфига с сервера
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('initAllowedVehicles', VehHash => {
-      this.config.allowedVehicles = VehHash;
-    });
 
-    // при старте заказа приходит с сервера client:startDelivery, и начинается заказ на клиенте
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:startDelivery', cargoType => {
-      this.startNewOrder(cargoType); //тип груза определяется на сервере
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.log("cargoType ".concat(cargoType));
-    });
-    // нужно для очистки информации о грузе при провале доставки
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:cancelDelivery', () => {
-      this.cancelCurrentOrder();
-    });
-    //для очистки обработчиков после выхода игрока с сервера
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('client:destroyDeliveryJob', () => {
-      this.destroy();
-    });
-    //для смены состояния доставки
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer('delivery:stateChanged', state => {
-      this.changeCurrentOrderState(state);
-    });
-    // визуальный взрыв при провале груза типа danger
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.onServer("explode", () => {
-      var player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;
-      natives__WEBPACK_IMPORTED_MODULE_1__.addExplosion(player.vehicle.pos.x, player.vehicle.pos.y, player.vehicle.pos.z, 9,
-      // тип взрыва (9 - Vehicle)
-      5.0,
-      // радиус
-      true,
-      // звук
-      false,
-      // невидимый огонь
-      0.0,
-      // камера shake
-      true);
-    });
-    // Обработка входа/выхода из колшейпов
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('entityEnterColshape', this.handleEnterColshapeDeliveryJobClient.bind(this));
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('entityLeaveColshape', this.handleLeaveColshapeDeliveryJobClient.bind(this));
-  }
   //создание полицеских блипов и колшейпов
   createPoliceBlipsColshapes() {
     this.config.policeStations.forEach((station, index) => {
-      var policeVisuals = new _classes_PointVisuals__WEBPACK_IMPORTED_MODULE_2__.PointVisuals(station).create();
+      var policeVisuals = new _classes_PointVisuals__WEBPACK_IMPORTED_MODULE_1__.PointVisuals(station).create();
 
       // добавление дополнительных свойст для колшейпов после создания создания
       policeVisuals.colshape.isPoliceZone = true; // нужно для проверки что автомобиль попал именно в полицейский колшейп, а не какой то другой
@@ -755,7 +766,7 @@ class DeliveryJobClient {
       this.cancelCurrentOrder();
     }
     // инициализируется класс конкретного заказа только при старте конкретного заказа
-    this.currentOrder = new _classes_DeliveryOrder__WEBPACK_IMPORTED_MODULE_3__.DeliveryOrder(cargoType, this.config, this.policeColshapes);
+    this.currentOrder = new _classes_DeliveryOrder__WEBPACK_IMPORTED_MODULE_2__.DeliveryOrder(cargoType, this.config, this.policeColshapes);
     this.currentOrder.deliveryJobClient = this; // cсылка для последующего обнуления
     this.currentOrder.start(); //старт конкретного заказа в DeliveryOrder
   }
@@ -792,6 +803,7 @@ class DeliveryJobClient {
     }
   }
 }
-new DeliveryJobClient();
+var deliveryJobClient = new DeliveryJobClient();
+_events_ClientEvents_js__WEBPACK_IMPORTED_MODULE_3__.ClientEvents.setupClientEvents(deliveryJobClient);
 })();
 

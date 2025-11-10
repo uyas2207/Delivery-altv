@@ -205,10 +205,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
 /* harmony import */ var fs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! fs */ "fs");
 /* harmony import */ var path__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! path */ "path");
-/* harmony import */ var _cargo_CommonCargo_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./cargo/CommonCargo.js */ "./server/cargo/CommonCargo.js");
-/* harmony import */ var _cargo_DangerCargo_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./cargo/DangerCargo.js */ "./server/cargo/DangerCargo.js");
-/* harmony import */ var _cargo_HardCargo_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./cargo/HardCargo.js */ "./server/cargo/HardCargo.js");
-/* harmony import */ var _cargo_IllegalCargo_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./cargo/IllegalCargo.js */ "./server/cargo/IllegalCargo.js");
+/* harmony import */ var _cargo_CommonCargo__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @cargo/CommonCargo */ "./server/cargo/CommonCargo.js");
+/* harmony import */ var _cargo_DangerCargo__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @cargo/DangerCargo */ "./server/cargo/DangerCargo.js");
+/* harmony import */ var _cargo_HardCargo__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @cargo/HardCargo */ "./server/cargo/HardCargo.js");
+/* harmony import */ var _cargo_IllegalCargo__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @cargo/IllegalCargo */ "./server/cargo/IllegalCargo.js");
 
 //для работы с файлами
 
@@ -226,7 +226,7 @@ class ConfigManager {
     this.unloadingPoints = [];
     this.policeStations = [];
     this.allowedVehicles = [];
-    this.cargoTypes = [_cargo_CommonCargo_js__WEBPACK_IMPORTED_MODULE_3__.CommonCargo, _cargo_HardCargo_js__WEBPACK_IMPORTED_MODULE_5__.HardCargo, _cargo_DangerCargo_js__WEBPACK_IMPORTED_MODULE_4__.DangerCargo, _cargo_IllegalCargo_js__WEBPACK_IMPORTED_MODULE_6__.IllegalCargo];
+    this.cargoTypes = [_cargo_CommonCargo__WEBPACK_IMPORTED_MODULE_3__.CommonCargo, _cargo_HardCargo__WEBPACK_IMPORTED_MODULE_5__.HardCargo, _cargo_DangerCargo__WEBPACK_IMPORTED_MODULE_4__.DangerCargo, _cargo_IllegalCargo__WEBPACK_IMPORTED_MODULE_6__.IllegalCargo];
     //this.deliveryState = DeliveryState;
   }
   //получение данных из конфига
@@ -236,10 +236,10 @@ class ConfigManager {
     var configData = fs__WEBPACK_IMPORTED_MODULE_1__.readFileSync(configPath, 'utf8');
     var fullConfig = JSON.parse(configData); //получение всех данных из конфига
     // Разделение конфига на отдельные части
-    this.loadingPoints = ((_fullConfig$points = fullConfig.points) === null || _fullConfig$points === void 0 ? void 0 : _fullConfig$points.loading) || [];
-    this.unloadingPoints = ((_fullConfig$points2 = fullConfig.points) === null || _fullConfig$points2 === void 0 ? void 0 : _fullConfig$points2.unloading) || [];
-    this.policeStations = fullConfig.policeStations || [];
-    this.allowedVehicles = ((_fullConfig$transport = fullConfig.transport) === null || _fullConfig$transport === void 0 ? void 0 : _fullConfig$transport.allowedVehicles) || [];
+    this.loadingPoints = (_fullConfig$points = fullConfig.points) === null || _fullConfig$points === void 0 ? void 0 : _fullConfig$points.loading;
+    this.unloadingPoints = (_fullConfig$points2 = fullConfig.points) === null || _fullConfig$points2 === void 0 ? void 0 : _fullConfig$points2.unloading;
+    this.policeStations = fullConfig.policeStations;
+    this.allowedVehicles = (_fullConfig$transport = fullConfig.transport) === null || _fullConfig$transport === void 0 ? void 0 : _fullConfig$transport.allowedVehicles;
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Config loaded: ".concat(this.loadingPoints.length, " loading, ").concat(this.unloadingPoints.length, " unloading points"));
   }
   getCargoTypes() {
@@ -277,13 +277,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   DeliveryJob: () => (/* binding */ DeliveryJob)
 /* harmony export */ });
 /* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
-/* harmony import */ var _shared_Consts_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @shared/Consts.js */ "./shared/Consts.js");
+/* harmony import */ var _shared_Consts__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @shared/Consts */ "./shared/Consts.js");
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 
 
 
-// Конкретный личный заказ доставки
+// Конкретный, личный заказ доставки
 class DeliveryJob {
   constructor(player, configManager) {
     this.player = player; //id игрока которой выполняет доставку
@@ -291,7 +291,7 @@ class DeliveryJob {
     this.cargo = null; // текущий тип заказа
     this.loadedVehId = null; //id загруженнного автомобился
     this.cargoTypes = this.configManager.getCargoTypes(); // Получаем типы грузов из configManager
-    this.state = _shared_Consts_js__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.EMPTY;
+    this.state = _shared_Consts__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.EMPTY;
     this.damageHandlingInProgress = false; // для единоразовой обработки урона
   }
   //метод для смены сосотояния текщей доставки
@@ -305,13 +305,13 @@ class DeliveryJob {
     this.cargo = new CargoClass();
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log("\u0412\u044B\u0431\u0440\u0430\u043D \u0442\u0438\u043F \u0433\u0440\u0443\u0437\u0430: ".concat(this.cargo.type));
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'client:startDelivery', this.cargo.type);
-    this.setState(_shared_Consts_js__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.WAITING_FOR_LOADING); //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
+    this.setState(_shared_Consts__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.WAITING_FOR_LOADING); //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
   }
 
   //запоминает loadedVehId
   Loaded(loadedVehId) {
     this.loadedVehId = loadedVehId;
-    this.setState(_shared_Consts_js__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.DELIVERING); //автомобиль был загружен и едет до точки разгрузки, для проверок урона
+    this.setState(_shared_Consts__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.DELIVERING); //автомобиль был загружен и едет до точки разгрузки, для проверок урона
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Loaded vehicle: ".concat(loadedVehId));
   }
 
@@ -320,7 +320,7 @@ class DeliveryJob {
     this.cargo.onSuccessfulDelivery(this.player); // выдает награду
     this.loadedVehId = null;
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Delivery completed for ".concat(this.player.id));
-    this.setState(_shared_Consts_js__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.EMPTY); //'empty'			нет активного заказа (провален или выполнен)
+    this.setState(_shared_Consts__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.EMPTY); //'empty'			нет активного заказа (провален или выполнен)
   }
 
   // отменяет текущий заказ
@@ -328,7 +328,7 @@ class DeliveryJob {
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'client:cancelDelivery');
     this.loadedVehId = null;
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Delivery cancelled for ".concat(this.player.id));
-    this.setState(_shared_Consts_js__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.EMPTY); //'empty'			нет активного заказа (провален или выполнен)
+    this.setState(_shared_Consts__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.EMPTY); //'empty'			нет активного заказа (провален или выполнен)
   }
 
   // отменяет текущий заказ + отправляет уведомление с причиной провала
@@ -337,14 +337,14 @@ class DeliveryJob {
     alt_server__WEBPACK_IMPORTED_MODULE_0__.emitClient(this.player, 'client:cancelDelivery');
     this.loadedVehId = null;
     alt_server__WEBPACK_IMPORTED_MODULE_0__.log("Delivery failed for ".concat(this.player.id));
-    this.setState(_shared_Consts_js__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.EMPTY); //'empty'			нет активного заказа (провален или выполнен)
+    this.setState(_shared_Consts__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.EMPTY); //'empty'			нет активного заказа (провален или выполнен)
   }
   handleDamage(vehicle, attacker) {
     var _this = this;
     return _asyncToGenerator(function* () {
       //если авто получило урон, но игрок не едет к точке разгрузки или если урон уже обрабатывается (по идее проверка на state не нужна так как раньше была проверка на loadedVehId)
-      if (_this.state !== _shared_Consts_js__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.DELIVERING || _this.damageHandlingInProgress) return;
-      _this.damageHandlingInProgress = true; // что быв повтоно не вызывались проверки если авто еще н6е успело удалиться
+      if (_this.state !== _shared_Consts__WEBPACK_IMPORTED_MODULE_1__.DeliveryState.DELIVERING || _this.damageHandlingInProgress) return;
+      _this.damageHandlingInProgress = true; // что бы повтоно не вызывались проверки если авто еще не успело удалиться
 
       try {
         yield _this.cargo.onDamage(vehicle, attacker, _this);
@@ -380,6 +380,75 @@ class NotificationManager {
 
 /***/ }),
 
+/***/ "./server/commands/deliveryCommands.js":
+/*!*********************************************!*\
+  !*** ./server/commands/deliveryCommands.js ***!
+  \*********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   DeliveryCommands: () => (/* binding */ DeliveryCommands)
+/* harmony export */ });
+/* harmony import */ var alt_chat__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt:chat */ "alt:chat");
+
+class DeliveryCommands {
+  static register(deliverySystem) {
+    //единственный способ начать доставку /randomload
+    alt_chat__WEBPACK_IMPORTED_MODULE_0__.registerCmd("randomload", player => {
+      deliverySystem.startNewOrder(player);
+    });
+    alt_chat__WEBPACK_IMPORTED_MODULE_0__.registerCmd("cancelorder", player => {
+      deliverySystem.cancelOrder(player);
+    });
+  }
+}
+
+/***/ }),
+
+/***/ "./server/events/ServerEvents.js":
+/*!***************************************!*\
+  !*** ./server/events/ServerEvents.js ***!
+  \***************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   ServerEvents: () => (/* binding */ ServerEvents)
+/* harmony export */ });
+/* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
+/* harmony import */ var alt_chat__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! alt:chat */ "alt:chat");
+
+
+class ServerEvents {
+  static setupSystemEvents(deliverySystem) {
+    //отправляет конфиг игроку после входа
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.on('playerConnect', player => {
+      deliverySystem.configManager.sendConfigToPlayer(player);
+      alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "{80eb34}Press {ff0000}T {80eb34}and type {ff0000}/randomload {80eb34}to start delivery.");
+      player.spawn(-1271.63, -1430.71, 4.34);
+    });
+    //когда клиент загрузил автомобиль приходит ивент с клиента
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.onClient('client:startLoading', (player, loadedVehId) => {
+      deliverySystem.startLoading(player, loadedVehId);
+    });
+    //если с клиента приходит информация что игрок завершил доставку успешно
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.onClient('client:completeDelivery', player => {
+      deliverySystem.completeDelivery(player);
+    });
+    //если с клиента приходит информация что игрок провалил доставку 
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.onClient('client:failDelivery', player => {
+      deliverySystem.failDelivery(player);
+    });
+    alt_server__WEBPACK_IMPORTED_MODULE_0__.on('vehicleDamage', (vehicle, attacker) => {
+      alt_server__WEBPACK_IMPORTED_MODULE_0__.log("\u0430\u0432\u0442\u043E \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E \u0443\u0440\u043E\u043D \u043F\u0435\u0440\u0435\u0434 \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0430\u043C\u0438");
+      deliverySystem.handleVehicleDamage(vehicle, attacker);
+    });
+  }
+}
+
+/***/ }),
+
 /***/ "./shared/Consts.js":
 /*!**************************!*\
   !*** ./shared/Consts.js ***!
@@ -396,7 +465,7 @@ var DeliveryState = {
   //'empty'			нет активного заказа (провален или выполнен)
   WAITING_FOR_LOADING: 'waiting_for_loading',
   //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
-  DELIVERING: 'delivering' //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+  DELIVERING: 'delivering' //'delivering'		после момента погрузки до момента разгрузки (активна точка разгрузки)
 };
 //globalThis.DeliveryState = DeliveryState;   //делает переменную глобавльной
 
@@ -506,14 +575,15 @@ var __webpack_exports__ = {};
   \*******************************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var alt_server__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-server */ "alt-server");
-/* harmony import */ var alt_chat__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! alt:chat */ "alt:chat");
+/* harmony import */ var _events_ServerEvents_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./events/ServerEvents.js */ "./server/events/ServerEvents.js");
 /* harmony import */ var _classes_ConfigManager_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./classes/ConfigManager.js */ "./server/classes/ConfigManager.js");
 /* harmony import */ var _classes_DeliveryJob_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./classes/DeliveryJob.js */ "./server/classes/DeliveryJob.js");
+/* harmony import */ var _commands_deliveryCommands_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./commands/deliveryCommands.js */ "./server/commands/deliveryCommands.js");
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 // alt:V built-in module that provides server-side API.
 
-// Your chat resource module.
+
 
 
 
@@ -523,41 +593,7 @@ class DeliveryJobSystem {
   constructor() {
     this.configManager = new _classes_ConfigManager_js__WEBPACK_IMPORTED_MODULE_2__.ConfigManager();
     this.activeOrders = new Map(); // хранит активные заказы по ID игроков
-    this.init();
-  }
-  init() {
-    //получение данных из конфига
     this.configManager.loadConfig();
-    //отправляет конфиг игроку после входа
-    alt_server__WEBPACK_IMPORTED_MODULE_0__.on('playerConnect', player => {
-      this.configManager.sendConfigToPlayer(player);
-      alt_chat__WEBPACK_IMPORTED_MODULE_1__.send(player, "{80eb34}Press {ff0000}T {80eb34}and type {ff0000}/randomload {80eb34}to start delivery.");
-      player.spawn(-1271.63, -1430.71, 4.34);
-    });
-    //когда клиент загрузил автомобиль приходит ивент с клиента
-    alt_server__WEBPACK_IMPORTED_MODULE_0__.onClient('client:startLoading', (player, loadedVehId) => {
-      this.startLoading(player, loadedVehId);
-    });
-    //если с клиента приходит информация что игрок завершил доставку успешно
-    alt_server__WEBPACK_IMPORTED_MODULE_0__.onClient('client:completeDelivery', player => {
-      this.completeDelivery(player);
-    });
-    //если с клиента приходит информация что игрок провалил доставку 
-    alt_server__WEBPACK_IMPORTED_MODULE_0__.onClient('client:failDelivery', player => {
-      this.failDelivery(player);
-    });
-    alt_server__WEBPACK_IMPORTED_MODULE_0__.on('vehicleDamage', (vehicle, attacker) => {
-      alt_server__WEBPACK_IMPORTED_MODULE_0__.log("\u0430\u0432\u0442\u043E \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E \u0443\u0440\u043E\u043D \u043F\u0435\u0440\u0435\u0434 \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0430\u043C\u0438");
-      this.handleVehicleDamage(vehicle, attacker);
-    });
-
-    //единственный способ начать доставку /randomload
-    alt_chat__WEBPACK_IMPORTED_MODULE_1__.registerCmd("]", player => {
-      this.startNewOrder(player);
-    });
-    alt_chat__WEBPACK_IMPORTED_MODULE_1__.registerCmd("cancelorder", player => {
-      this.cancelOrder(player);
-    });
   }
   startNewOrder(player) {
     // отменяем текущий заказ если есть
@@ -603,16 +639,13 @@ class DeliveryJobSystem {
       if (order && order.loadedVehId === vehicle.id) {
         //проверка что урон был получеен машиной в которую погружен заказ
         alt_server__WEBPACK_IMPORTED_MODULE_0__.log("\u0430\u0432\u0442\u043E \u043F\u043E\u043B\u0443\u0447\u0438\u043B\u043E \u0443\u0440\u043E\u043D \u043F\u043E\u0441\u043B\u0435 \u043F\u0440\u043E\u0432\u0435\u0440\u043E\u043A \u043D\u0430 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043D\u044B\u0439 \u0430\u0432\u0442\u043E\u043C\u043E\u0431\u0438\u043B\u044C");
-        alt_server__WEBPACK_IMPORTED_MODULE_0__.log("order.loadedVehId: ".concat(order.loadedVehId));
         yield order.handleDamage(vehicle, attacker);
       }
     })();
   }
 }
-
-//new DeliveryJob();
-new DeliveryJobSystem();
-
-//alt.emitClient(player, 'delivery:stateChanged', state);
+var deliverySystem = new DeliveryJobSystem();
+_events_ServerEvents_js__WEBPACK_IMPORTED_MODULE_1__.ServerEvents.setupSystemEvents(deliverySystem);
+_commands_deliveryCommands_js__WEBPACK_IMPORTED_MODULE_4__.DeliveryCommands.register(deliverySystem);
 })();
 

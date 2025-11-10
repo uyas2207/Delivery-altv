@@ -1,7 +1,7 @@
 import * as alt from 'alt-server';
-import { DeliveryState } from '@shared/Consts.js';
+import { DeliveryState } from '@shared/Consts';
 
-// Конкретный личный заказ доставки
+// Конкретный, личный заказ доставки
 export class DeliveryJob {
     constructor(player, configManager) {
         this.player = player;   //id игрока которой выполняет доставку
@@ -63,7 +63,7 @@ export class DeliveryJob {
     async handleDamage(vehicle, attacker) {
         //если авто получило урон, но игрок не едет к точке разгрузки или если урон уже обрабатывается (по идее проверка на state не нужна так как раньше была проверка на loadedVehId)
         if (this.state !== DeliveryState.DELIVERING || this.damageHandlingInProgress) return;
-        this.damageHandlingInProgress = true;   // что быв повтоно не вызывались проверки если авто еще н6е успело удалиться
+        this.damageHandlingInProgress = true;   // что бы повтоно не вызывались проверки если авто еще не успело удалиться
         
         try {
             await this.cargo.onDamage(vehicle, attacker, this);

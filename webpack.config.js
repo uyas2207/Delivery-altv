@@ -80,14 +80,6 @@ return [
             path.resolve(__dirname, 'client/classes/clientNotificationManager.js'),
             'default'
           ]
-          
-          /*
-          ,
-          VehicleBlocker: [
-            path.resolve(__dirname, 'client/classes/VehicleBlocker.js'),
-            'default'
-          ]
-          */
         }),
       ],
      devtool: false
@@ -112,9 +104,8 @@ return [
       resolve: {
         extensions: ['.js'],
         alias: {
-          './cargo': path.resolve(__dirname, 'server/cargo'),
-          './shared': path.resolve(__dirname, 'shared'),
-          '@shared': path.resolve(__dirname, 'shared')
+          '@shared': path.resolve(__dirname, 'shared'),
+          '@cargo': path.resolve(__dirname, 'server/cargo')
         }
       },
       externalsType: 'module',

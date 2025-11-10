@@ -1,14 +1,8 @@
 import * as alt from 'alt-client';
-import * as native from "natives";
 
 import { PointVisuals } from '@classes/PointVisuals';
-//import { NotificationManager } from '@classes/clientNotificationManager';
 import { DeliveryOrder } from '@classes/DeliveryOrder';
-
-
-//import { DeliveryState } from '@shared/Consts.js';
-
-
+import { ClientEvents } from './events/ClientEvents.js';
 
 // Общая система управления доставкой создается при подключении игрока
 class DeliveryJobClient {
@@ -23,15 +17,9 @@ class DeliveryJobClient {
         this.loadingMarkerType = null;  //текщая точка погрузки
         this.unloadingMarkerType = null;    //текущая точка разгрузк
         this.policeColshapes = []; // Массив для хранения колшейпов полиции
-        
-        //this.state = DeliveryState.EMPTY;     //'empty'			нет активного заказа (провален или выполнен)
         this.currentOrder = null;   // В будущем класс для конкретного заказа, пока что null что бы не использовать что либо что относится только к конкретному заказау до того как игрок начнет конкретный заказ
 
-       // this.vehicleBlocker = new VehicleBlocker(); //для блокировки на разгрузке/погрузке
-        
         this.initializeNotificationManager();
-
-        this.init();
     }
 
     // метод для инициализации NotificationManager
@@ -46,62 +34,6 @@ class DeliveryJobClient {
         alt.log('1. NotificationManager инициализирован через DeliveryJobClient');
     }
 
-    init() { 
-        alt.log('2. Инициализация системы доставки.');
-        // получение данных из конфига с сервера
-        alt.onServer('initLoadingPoints', (points) => {
-            this.config.loadingPoints = points;
-        });
-        // получение данных из конфига с сервера
-        alt.onServer('initUnloadingPoints', (points) => {
-            this.config.unloadingPoints = points;
-        });
-        // получение данных из конфига с сервера
-        alt.onServer('initPoliceStations', (points) => {
-            this.config.policeStations = points;
-            this.createPoliceBlipsColshapes();  //сразу при входе на сервер будет точка погрузки 
-        });
-        // получение данных из конфига с сервера
-        alt.onServer('initAllowedVehicles', (VehHash) => {
-            this.config.allowedVehicles = VehHash;
-        });
-       
-        // при старте заказа приходит с сервера client:startDelivery, и начинается заказ на клиенте
-        alt.onServer('client:startDelivery', (cargoType) => {
-            this.startNewOrder(cargoType);  //тип груза определяется на сервере
-            alt.log(`cargoType ${cargoType}`);
-        });
-        // нужно для очистки информации о грузе при провале доставки
-        alt.onServer('client:cancelDelivery', () => {
-            this.cancelCurrentOrder();
-        });
-        //для очистки обработчиков после выхода игрока с сервера
-        alt.onServer('client:destroyDeliveryJob',() => {
-            this.destroy();
-        });
-        //для смены состояния доставки
-        alt.onServer('delivery:stateChanged', (state) => {
-            this.changeCurrentOrderState(state);
-        });
-        // визуальный взрыв при провале груза типа danger
-        alt.onServer("explode",() =>{
-            const player = alt.Player.local;
-            native.addExplosion(
-                player.vehicle.pos.x,
-                player.vehicle.pos.y,
-                player.vehicle.pos.z,
-                9, // тип взрыва (9 - Vehicle)
-                5.0, // радиус
-                true, // звук
-                false, // невидимый огонь
-                0.0, // камера shake
-                true
-            );
-        });
-        // Обработка входа/выхода из колшейпов
-        alt.on('entityEnterColshape', this.handleEnterColshapeDeliveryJobClient.bind(this));
-        alt.on('entityLeaveColshape', this.handleLeaveColshapeDeliveryJobClient.bind(this));
-        }
     //создание полицеских блипов и колшейпов
     createPoliceBlipsColshapes() {
         this.config.policeStations.forEach((station, index) => {
@@ -170,4 +102,5 @@ class DeliveryJobClient {
 
 
 
-new DeliveryJobClient();
+const deliveryJobClient = new DeliveryJobClient();
+ClientEvents.setupClientEvents(deliveryJobClient);
