@@ -1,6 +1,6 @@
 //для работы функицй alt.
 import * as alt from 'alt-server';
-import { NotificationManager } from '../serverNotification/serverNotificationManager.js';   //для вызова уведмолений
+import { NotificationManager } from '../classes/serverNotificationManager.js';   //для вызова уведмолений
 
 class CargoBase {
     constructor(type, reward, reason) {

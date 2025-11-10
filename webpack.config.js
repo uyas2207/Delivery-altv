@@ -53,6 +53,9 @@ return [
       },
       resolve: {
         extensions: ['.js', '.html'],
+        alias: {
+          '@classes': path.resolve(__dirname, 'client/classes')
+        }
       },
       externalsType: 'module',
       externals: {
@@ -70,12 +73,22 @@ return [
           DeliveryState: [
             path.resolve(__dirname, 'shared/Consts.js'),
             'DeliveryState'
-          ],
+          ]
+          
+          ,
           NotificationManager: [
-            path.resolve(__dirname, 'client/clientNotificationManager.js'),
+            path.resolve(__dirname, 'client/classes/clientNotificationManager.js'),
             'default'
           ]
-        })
+          
+          /*
+          ,
+          VehicleBlocker: [
+            path.resolve(__dirname, 'client/classes/VehicleBlocker.js'),
+            'default'
+          ]
+          */
+        }),
       ],
      devtool: false
     },

@@ -2,10 +2,421 @@ import * as __WEBPACK_EXTERNAL_MODULE_alt_client_680395b4__ from "alt-client";
 import * as __WEBPACK_EXTERNAL_MODULE_natives__ from "natives";
 /******/ var __webpack_modules__ = ({
 
-/***/ "./client/clientNotificationManager.js":
-/*!*********************************************!*\
-  !*** ./client/clientNotificationManager.js ***!
-  \*********************************************/
+/***/ "./client/classes/DeliveryOrder.js":
+/*!*****************************************!*\
+  !*** ./client/classes/DeliveryOrder.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   DeliveryOrder: () => (/* binding */ DeliveryOrder)
+/* harmony export */ });
+/* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ "alt-client");
+/* harmony import */ var _classes_PointBase__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @classes/PointBase */ "./client/classes/PointBase.js");
+/* harmony import */ var _classes_VehicleBlocker__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @classes/VehicleBlocker */ "./client/classes/VehicleBlocker.js");
+/* harmony import */ var _classes_PointVisuals__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @classes/PointVisuals */ "./client/classes/PointVisuals.js");
+/* provided dependency */ var DeliveryState = __webpack_require__(/*! ./shared/Consts.js */ "./shared/Consts.js")["DeliveryState"];
+/* provided dependency */ var NotificationManager = __webpack_require__(/*! ./client/classes/clientNotificationManager.js */ "./client/classes/clientNotificationManager.js")["default"];
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+
+
+
+
+//import { NotificationManager } from '@classes/clientNotificationManager';
+
+// Конкретный заказ на клиенте, создается только при старте доставки у конкретного игрока (не при входе на сервер)
+class DeliveryOrder {
+  constructor(cargoType, config, policeColshapes) {
+    //Данные из конфига
+    this.cargoType = cargoType; //тип груза CommonCargo, HardCargo, DangerCargo, IllegalCargo
+    this.config = config; // (все loadingPoints, все unloadingPoints, все allowedVehicles, все policeStations)
+    this.policeColshapes = policeColshapes;
+
+    //this.state = DeliveryState.EMPTY;    //'empty'			нет активного заказа (провален или выполнен)
+    this.loadingPoint = null; //текущая точка погрузки
+    this.unloadingPoint = null; //текущая точка разгрузки
+    this.loadedVehId = null; //сетевой id загруженной машины
+    this.deliveryJobClient = null; //переменная для хранения ссылки
+
+    this.pointBaseType = {
+      LOADING: 'loading',
+      UNLOADING: 'unloading'
+    }; // тип точки передается в Pointbase (и нигде не используется)
+  }
+
+  //смена текщего состояния доставки
+  changeState(state) {
+    this.state = state;
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0418\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F this.state \u043D\u0430 ".concat(this.state));
+  }
+  start() {
+    var _this = this;
+    return _asyncToGenerator(function* () {
+      yield _this.selectPoints();
+      _this.createLoadingPoint();
+      //this.state = DeliveryState.WAITING_FOR_LOADING;   //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
+    })();
+  }
+  selectPoints() {
+    return new Promise(resolve => {
+      // Выбор случайных точек            
+      this.loadingPoint = this.config.loadingPoints[Math.floor(Math.random() * this.config.loadingPoints.length)];
+      this.unloadingPoint = this.config.unloadingPoints[Math.floor(Math.random() * this.config.unloadingPoints.length)];
+
+      // Проверка для нелегального груза
+      if (this.cargoType === 'Illegal') {
+        this.distanceFromPoliceStations();
+      }
+      resolve();
+    });
+  }
+  // Проверка расстояния от выбранной точки разгрузки до полицейских участков
+  distanceFromPoliceStations() {
+    var _this2 = this;
+    return _asyncToGenerator(function* () {
+      var minDistance = 350;
+
+      // unloadingPoint в Vector3 для расчета расстояния
+      var unloadingPos = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(_this2.unloadingPoint.x, _this2.unloadingPoint.y, _this2.unloadingPoint.z);
+      var isTooClose = _this2.config.policeStations.some(station => {
+        var stationPos = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(station.x, station.y, station.z);
+        var distance = unloadingPos.distanceTo(stationPos);
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0420\u0430\u0441\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0434\u043E \u043F\u043E\u043B\u0438\u0446\u0435\u0439\u0441\u043A\u043E\u0433\u043E \u0443\u0447\u0430\u0441\u0442\u043A\u0430 ".concat(station.name, ": ").concat(distance));
+        return distance < minDistance; //если distance меньше чем 350 isTooClose = true 
+      });
+      if (isTooClose) {
+        // Перевыбираем точку разгрузки, не меняя точки погрузки
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0422\u043E\u0447\u043A\u0430 \u0440\u0430\u0437\u0433\u0440\u0443\u0437\u043A\u0438 \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0431\u043B\u0438\u0437\u043A\u043E \u043A \u043F\u043E\u043B\u0438\u0446\u0438\u0438, \u0432\u044B\u0431\u0438\u0440\u0430\u0435\u043D\u0442\u0441\u044F \u043D\u043E\u0432\u0430\u044F...");
+        _this2.unloadingPoint = _this2.config.unloadingPoints[Math.floor(Math.random() * _this2.config.unloadingPoints.length)];
+        _this2.distanceFromPoliceStations(); // Рекурсивная проверка
+        //если вдруг будет в конфиге слишком много точек близко к полиции что бы были временные промежутки между проверками (+ можно доавбить ограничение на количество повторных выборов точки разгрузки)
+        yield new Promise(resolve => alt_client__WEBPACK_IMPORTED_MODULE_0__.setTimeout(resolve, 10));
+      }
+    })();
+  }
+  createLoadingPoint() {
+    // создает визуальные элементы (маркеры, блипы и колшейпы)
+    var pointVisuals = new _classes_PointVisuals__WEBPACK_IMPORTED_MODULE_3__.PointVisuals(this.loadingPoint).create();
+
+    // создает PointBase с поведением (логика точки погрузки/разгрузки)
+    this.loadingPoint = new _classes_PointBase__WEBPACK_IMPORTED_MODULE_1__.PointBase(this.pointBaseType.LOADING, this, pointVisuals);
+  }
+  createUnloadingPoint() {
+    // создает визуальные элементы (маркеры, блипы и колшейпы)
+    var pointVisuals = new _classes_PointVisuals__WEBPACK_IMPORTED_MODULE_3__.PointVisuals(this.unloadingPoint).create();
+
+    // создает PointBase с поведением (логика точки погрузки/разгрузки)
+    this.unloadingPoint = new _classes_PointBase__WEBPACK_IMPORTED_MODULE_1__.PointBase(this.pointBaseType.UNLOADING, this, pointVisuals);
+  }
+  handleColshapeEnterDeliveryOrder(colshape) {
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("alt.Player.local.vehicle.id: ".concat(alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle.id));
+
+    // если в будущем будет добавлено больше колшейпов проверка handleColshapeEnterDeliveryOrder будет return
+    if (!this.loadingPoint || !this.unloadingPoint || !this.policeColshapes) return;
+    // если 'waiting_for_loading' значит колшейп точки погрузки
+    if (this.state === DeliveryState.WAITING_FOR_LOADING) {
+      //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
+      if (colshape === this.loadingPoint.pointVisuals.colshape) {
+        this.loadingPoint.PointLoad(colshape, alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle);
+      }
+    }
+    //если 'delivering' значит колшейп точки разгрузки
+    if (this.state === DeliveryState.DELIVERING) {
+      //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+      if (colshape === this.unloadingPoint.pointVisuals.colshape) {
+        this.unloadingPoint.PointUnload(colshape, alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle);
+      }
+    }
+    //если колшейп полицейский и груз Illegal и в колшейп вошли на загруженной машине
+    if (colshape.isPoliceZone) {
+      if (this.cargoType === 'Illegal' && alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle.id === this.loadedVehId) {
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:failDelivery'); //отправляет на сервер информацию о провале доставки
+      }
+    }
+  }
+  handleColshapeLeave(colshape) {
+    // Очищаем обработчики клавиш при выходе из колшейпа (только если открыта webview)
+    if (this.state === DeliveryState.WAITING_FOR_LOADING && this.loadingPoint) {
+      //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
+      this.loadingPoint.cleanup();
+    }
+    if (this.state === DeliveryState.DELIVERING && this.unloadingPoint) {
+      //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+      this.unloadingPoint.cleanup();
+    }
+  }
+  //процесс погрзки (после проверки на соблюдение всех необходимых для нее требований)
+  executeLoading(vehicle) {
+    var _this3 = this;
+    return _asyncToGenerator(function* () {
+      var vehicleBlocker = new _classes_VehicleBlocker__WEBPACK_IMPORTED_MODULE_2__.VehicleBlocker();
+      NotificationManager.getInstance().drawNotification('Начало погрузки...', true); //true значит что уведмоление пропадет через 3 чекунды
+      yield vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
+
+      _this3.loadedVehId = vehicle.id;
+      _this3.loadingPoint.pointVisuals.destroy();
+      _this3.createUnloadingPoint();
+      //this.state = DeliveryState.DELIVERING  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+
+      NotificationManager.getInstance().drawNotification("\u041F\u043E\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430! \u0413\u0440\u0443\u0437: ".concat(_this3.cargoType));
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:startLoading', _this3.loadedVehId); //передает на сервер что игрок погрузил груз
+    })();
+  }
+  //процесс разгрузки (после проверки на соблюдение всех необходимых для нее требований)
+  executeUnloading(vehicle) {
+    var _this4 = this;
+    return _asyncToGenerator(function* () {
+      var vehicleBlocker = new _classes_VehicleBlocker__WEBPACK_IMPORTED_MODULE_2__.VehicleBlocker();
+      NotificationManager.getInstance().drawNotification('Начало разгрузки...', true); //true значит что уведмоление пропадет через 3 чекунды
+      yield vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
+
+      _this4.loadedVehId = null;
+      _this4.unloadingPoint.pointVisuals.destroy();
+      //this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
+
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:completeDelivery');
+      NotificationManager.getInstance().drawNotification("\u0414\u043E\u0441\u0442\u0430\u0432\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430! \u0413\u0440\u0443\u0437: ".concat(_this4.cargoType));
+      _this4.deliveryJobClient.currentOrder = null;
+    })();
+  }
+  cancel() {
+    // полная очистка ресурсов
+    if (this.state === DeliveryState.WAITING_FOR_LOADING) {
+      //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
+      this.loadingPoint.cleanup();
+      this.loadingPoint.pointVisuals.destroy();
+      //this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
+    }
+    if (this.state === DeliveryState.DELIVERING) {
+      //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
+      this.unloadingPoint.cleanup();
+      this.unloadingPoint.pointVisuals.destroy();
+      this.loadedVehId = null;
+      //this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
+    }
+
+    // обнуление в родители
+    if (this.deliveryJobClient) {
+      this.deliveryJobClient.currentOrder = null;
+    }
+  }
+}
+
+/***/ }),
+
+/***/ "./client/classes/PointBase.js":
+/*!*************************************!*\
+  !*** ./client/classes/PointBase.js ***!
+  \*************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   PointBase: () => (/* binding */ PointBase)
+/* harmony export */ });
+/* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ "alt-client");
+/* provided dependency */ var NotificationManager = __webpack_require__(/*! ./client/classes/clientNotificationManager.js */ "./client/classes/clientNotificationManager.js")["default"];
+
+// Класс точки с логикой для точки погрузки/разгрузки
+class PointBase {
+  constructor(type, deliveryOrder, pointVisuals) {
+    this.type = type; //по идее не нужен, так как нигде не используется
+    this.deliveryOrder = deliveryOrder;
+    this.pointVisuals = pointVisuals;
+    this.keyPressHandler = null; // свойство для хранения обработчика
+  }
+
+  // метод PointLoad - инкапсулирует поведение точки погрузки
+  PointLoad(colshape, entity) {
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("PointLoad");
+    var player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;
+
+    // проверка на разрешенные модели авто
+    if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) {
+      NotificationManager.getInstance().drawNotification('Транспорт не подходит для перевозки');
+      return;
+    }
+    NotificationManager.getInstance().showPersistent("Погрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать погрузку");
+
+    //таких ситуаций в текущем коде быть не может, проверка есть на случай если потом будут добавлены еще обработчки при расширении функционала доставки
+    if (this.keyPressHandler) {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.off('keydown', this.keyPressHandler);
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Удален обработчик 1');
+    }
+
+    // Создает новый обработчик для клавиши E
+    this.keyPressHandler = key => {
+      //проверка на нажатие E и соблюдение всех необходимых условий для погрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView) (можно добавить еще проверки на разрешенную модель авто если надо для защиты)
+      if (key === 69 && NotificationManager.getInstance().isWebViewOpen && this.pointVisuals.position.distanceTo(player.pos) < 10) {
+        // удаляет обработчик после нажатия
+        this.cleanup();
+        NotificationManager.getInstance().hidePersistent(); //скрыть WebView
+        if (!player.vehicle) {
+          // если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
+          NotificationManager.getInstance().drawNotification('Вы не находитесь в транспорте');
+          return;
+        }
+        if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) {
+          // снова проверка на правильное авто (вдруг игрок заехал в колшейп на правильном авто и невыходя из колшейпа пересел в неправильное авто)
+          alt_client__WEBPACK_IMPORTED_MODULE_0__.log("Vehicle ".concat(player.vehicle.model, " is not allowed"));
+          NotificationManager.getInstance().drawNotification('Неправильное авто');
+          return;
+        }
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Началась погрузка');
+        this.deliveryOrder.executeLoading(player.vehicle);
+      }
+    };
+
+    // регистрирует обработчик
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('keydown', this.keyPressHandler);
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Создан обработчик погрузки');
+  }
+
+  // метод PointUnload - инкапсулирует поведение точки разгрузки
+  PointUnload(colshape, entity) {
+    var player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;
+
+    // проверка что это тот же транспорт что и был загружке
+    if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {
+      NotificationManager.getInstance().drawNotification('Это не тот транспорт, в который был загружен груз');
+      return;
+    }
+    NotificationManager.getInstance().showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
+    this.keyPressHandler = key => {
+      //проверка на нажатие E и соблюдение всех необходимых условий для разгрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView) (можно добавить еще проверки на разрешенную модель авто если надо для защиты)
+      if (key === 69 && NotificationManager.getInstance().isWebViewOpen && this.pointVisuals.position.distanceTo(player.pos) < 15) {
+        // удаляет обработчик после нажатия
+        this.cleanup();
+        NotificationManager.getInstance().hidePersistent(); //скрыть WebView
+        //проверку ниже можно убрать, так как если игрок вышел из авто и/или пересел в другую машину ему это не даст никакого приемущества (но для логики игрового процесса стоит остаивть)
+        if (!player.vehicle) {
+          // Если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
+          NotificationManager.getInstance().drawNotification('Вы не находитесь в транспорте');
+          return;
+        }
+        if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {
+          //если игрок заехал на загруженном транспорте, но не выходя из колшейпа пересел в другое авто (проверка для того что бы не нарушалась логика игрового процесса) 
+          NotificationManager.getInstance().drawNotification('Это не тот транспорт, в который был загружен груз');
+          return;
+        }
+        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Началась разгрузка');
+        this.deliveryOrder.executeUnloading(player.vehicle);
+      }
+    };
+
+    // регистрирует обработчик
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('keydown', this.keyPressHandler);
+    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Создан обработчик разгрузки');
+  }
+
+  // метод для очистки обработчика keyPressHandler
+  cleanup() {
+    if (this.keyPressHandler) {
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.off('keydown', this.keyPressHandler);
+      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Удален обработчик');
+      this.keyPressHandler = null;
+    }
+  }
+}
+
+/***/ }),
+
+/***/ "./client/classes/PointVisuals.js":
+/*!****************************************!*\
+  !*** ./client/classes/PointVisuals.js ***!
+  \****************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   PointVisuals: () => (/* binding */ PointVisuals)
+/* harmony export */ });
+/* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ "alt-client");
+
+// Класс для создания и уничтожения визуальных элементов точки
+class PointVisuals {
+  constructor(pointConfig) {
+    this.pointConfig = pointConfig;
+    this.position = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(pointConfig.x, pointConfig.y, pointConfig.z);
+    this.marker = null;
+    this.blip = null;
+    this.colshape = null;
+  }
+  create() {
+    //Так как colshapeRadius у полицейских учатсков не прописан в конфиге он undefined
+    if (this.pointConfig.colshapeRadius === undefined) {
+      this.pointConfig.colshapeRadius = 350;
+    }
+    // Создание маркера
+    //у полицейских участков нет маркера в конфиге поэтому он undefined
+    if (this.pointConfig.markerType !== undefined) {
+      this.marker = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Marker(this.pointConfig.markerType, this.position, new alt_client__WEBPACK_IMPORTED_MODULE_0__.RGBA(this.pointConfig.markerColor[0], this.pointConfig.markerColor[1], this.pointConfig.markerColor[2], this.pointConfig.markerColor[3]));
+    }
+
+    // Создание блипа
+    this.blip = new alt_client__WEBPACK_IMPORTED_MODULE_0__.PointBlip(this.position.x, this.position.y, this.position.z);
+    this.blip.sprite = this.pointConfig.blipSprite;
+    this.blip.color = this.pointConfig.blipColor;
+    this.blip.name = this.pointConfig.name;
+    this.blip.shortRange = this.pointConfig.blipshortRange;
+
+    // Создание колшейпа
+    this.colshape = new alt_client__WEBPACK_IMPORTED_MODULE_0__.ColshapeSphere(this.position.x, this.position.y, this.position.z, this.pointConfig.colshapeRadius);
+    return this;
+  }
+  destroy() {
+    if (this.marker) this.marker.destroy();
+    if (this.blip) this.blip.destroy();
+    if (this.colshape) this.colshape.destroy();
+  }
+}
+
+/***/ }),
+
+/***/ "./client/classes/VehicleBlocker.js":
+/*!******************************************!*\
+  !*** ./client/classes/VehicleBlocker.js ***!
+  \******************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   VehicleBlocker: () => (/* binding */ VehicleBlocker)
+/* harmony export */ });
+/* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ "alt-client");
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+
+
+// Блокировщик транспорта
+class VehicleBlocker {
+  blockVehicleForThreeSeconds(vehicle) {
+    return _asyncToGenerator(function* () {
+      return new Promise(resolve => {
+        if (vehicle && vehicle.valid) {
+          vehicle.frozen = true;
+          setTimeout(() => {
+            vehicle.frozen = false;
+            resolve();
+          }, 3000);
+        } else {
+          resolve(); // если транспорт невалиден, сразу разрешает промис
+          alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Ошибка, неправильный reslove');
+        }
+      });
+    })();
+  }
+}
+//export default VehicleBlocker;
+
+/***/ }),
+
+/***/ "./client/classes/clientNotificationManager.js":
+/*!*****************************************************!*\
+  !*** ./client/classes/clientNotificationManager.js ***!
+  \*****************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -220,71 +631,18 @@ var __webpack_exports__ = {};
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var alt_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! alt-client */ "alt-client");
 /* harmony import */ var natives__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! natives */ "natives");
-/* provided dependency */ var NotificationManager = __webpack_require__(/*! ./client/clientNotificationManager.js */ "./client/clientNotificationManager.js")["default"];
-/* provided dependency */ var DeliveryState = __webpack_require__(/*! ./shared/Consts.js */ "./shared/Consts.js")["DeliveryState"];
+/* harmony import */ var _classes_PointVisuals__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @classes/PointVisuals */ "./client/classes/PointVisuals.js");
+/* harmony import */ var _classes_DeliveryOrder__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @classes/DeliveryOrder */ "./client/classes/DeliveryOrder.js");
+/* provided dependency */ var NotificationManager = __webpack_require__(/*! ./client/classes/clientNotificationManager.js */ "./client/classes/clientNotificationManager.js")["default"];
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
 function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 
 
+
+//import { NotificationManager } from '@classes/clientNotificationManager';
+
+
 //import { DeliveryState } from '@shared/Consts.js';
-
-// Блокировщик транспорта
-class VehicleBlocker {
-  blockVehicleForThreeSeconds(vehicle) {
-    return _asyncToGenerator(function* () {
-      return new Promise(resolve => {
-        if (vehicle && vehicle.valid) {
-          vehicle.frozen = true;
-          setTimeout(() => {
-            vehicle.frozen = false;
-            resolve();
-          }, 3000);
-        } else {
-          resolve(); // если транспорт невалиден, сразу разрешает промис
-          alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Ошибка, неправильный reslove');
-        }
-      });
-    })();
-  }
-}
-
-// Класс для создания и уничтожения визуальных элементов точки
-class PointVisuals {
-  constructor(pointConfig) {
-    this.pointConfig = pointConfig;
-    this.position = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(pointConfig.x, pointConfig.y, pointConfig.z);
-    this.marker = null;
-    this.blip = null;
-    this.colshape = null;
-  }
-  create() {
-    //Так как colshapeRadius у полицейских учатсков не прописан в конфиге он undefined
-    if (this.pointConfig.colshapeRadius === undefined) {
-      this.pointConfig.colshapeRadius = 350;
-    }
-    // Создание маркера
-    //у полицейских участков нет маркера в конфиге поэтому он undefined
-    if (this.pointConfig.markerType !== undefined) {
-      this.marker = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Marker(this.pointConfig.markerType, this.position, new alt_client__WEBPACK_IMPORTED_MODULE_0__.RGBA(this.pointConfig.markerColor[0], this.pointConfig.markerColor[1], this.pointConfig.markerColor[2], this.pointConfig.markerColor[3]));
-    }
-
-    // Создание блипа
-    this.blip = new alt_client__WEBPACK_IMPORTED_MODULE_0__.PointBlip(this.position.x, this.position.y, this.position.z);
-    this.blip.sprite = this.pointConfig.blipSprite;
-    this.blip.color = this.pointConfig.blipColor;
-    this.blip.name = this.pointConfig.name;
-    this.blip.shortRange = this.pointConfig.blipshortRange;
-
-    // Создание колшейпа
-    this.colshape = new alt_client__WEBPACK_IMPORTED_MODULE_0__.ColshapeSphere(this.position.x, this.position.y, this.position.z, this.pointConfig.colshapeRadius);
-    return this;
-  }
-  destroy() {
-    if (this.marker) this.marker.destroy();
-    if (this.blip) this.blip.destroy();
-    if (this.colshape) this.colshape.destroy();
-  }
-}
 
 // Общая система управления доставкой создается при подключении игрока
 class DeliveryJobClient {
@@ -380,7 +738,7 @@ class DeliveryJobClient {
   //создание полицеских блипов и колшейпов
   createPoliceBlipsColshapes() {
     this.config.policeStations.forEach((station, index) => {
-      var policeVisuals = new PointVisuals(station).create();
+      var policeVisuals = new _classes_PointVisuals__WEBPACK_IMPORTED_MODULE_2__.PointVisuals(station).create();
 
       // добавление дополнительных свойст для колшейпов после создания создания
       policeVisuals.colshape.isPoliceZone = true; // нужно для проверки что автомобиль попал именно в полицейский колшейп, а не какой то другой
@@ -397,7 +755,7 @@ class DeliveryJobClient {
       this.cancelCurrentOrder();
     }
     // инициализируется класс конкретного заказа только при старте конкретного заказа
-    this.currentOrder = new DeliveryOrder(cargoType, this.config, this.policeColshapes);
+    this.currentOrder = new _classes_DeliveryOrder__WEBPACK_IMPORTED_MODULE_3__.DeliveryOrder(cargoType, this.config, this.policeColshapes);
     this.currentOrder.deliveryJobClient = this; // cсылка для последующего обнуления
     this.currentOrder.start(); //старт конкретного заказа в DeliveryOrder
   }
@@ -431,286 +789,6 @@ class DeliveryJobClient {
       NotificationManager.getInstance().hidePersistent();
       //очищает обработчик нажатия клавиши (который создается только при открытии WebViewOpen, поэтому в других случаях его можно не очищать)
       this.currentOrder.handleColshapeLeave(colshape, entity);
-    }
-  }
-}
-
-// Конкретный заказ на клиенте, создается только при старте доставки у конкретного игрока (не при входе на сервер)
-class DeliveryOrder {
-  constructor(cargoType, config, policeColshapes) {
-    //Данные из конфига
-    this.cargoType = cargoType; //тип груза CommonCargo, HardCargo, DangerCargo, IllegalCargo
-    this.config = config; // (все loadingPoints, все unloadingPoints, все allowedVehicles, все policeStations)
-    this.policeColshapes = policeColshapes;
-
-    //this.state = DeliveryState.EMPTY;    //'empty'			нет активного заказа (провален или выполнен)
-    this.loadingPoint = null; //текущая точка погрузки
-    this.unloadingPoint = null; //текущая точка разгрузки
-    this.loadedVehId = null; //сетевой id загруженной машины
-    this.deliveryJobClient = null; //переменная для хранения ссылки
-
-    this.pointBaseType = {
-      LOADING: 'loading',
-      UNLOADING: 'unloading'
-    }; // тип точки передается в Pointbase (и нигде не используется)
-  }
-
-  //смена текщего состояния доставки
-  changeState(state) {
-    this.state = state;
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0418\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F this.state \u043D\u0430 ".concat(this.state));
-  }
-  start() {
-    var _this = this;
-    return _asyncToGenerator(function* () {
-      yield _this.selectPoints();
-      _this.createLoadingPoint();
-      //this.state = DeliveryState.WAITING_FOR_LOADING;   //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
-    })();
-  }
-  selectPoints() {
-    return new Promise(resolve => {
-      // Выбор случайных точек            
-      this.loadingPoint = this.config.loadingPoints[Math.floor(Math.random() * this.config.loadingPoints.length)];
-      this.unloadingPoint = this.config.unloadingPoints[Math.floor(Math.random() * this.config.unloadingPoints.length)];
-
-      // Проверка для нелегального груза
-      if (this.cargoType === 'Illegal') {
-        this.distanceFromPoliceStations();
-      }
-      resolve();
-    });
-  }
-  // Проверка расстояния от выбранной точки разгрузки до полицейских участков
-  distanceFromPoliceStations() {
-    var _this2 = this;
-    return _asyncToGenerator(function* () {
-      var minDistance = 350;
-
-      // unloadingPoint в Vector3 для расчета расстояния
-      var unloadingPos = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(_this2.unloadingPoint.x, _this2.unloadingPoint.y, _this2.unloadingPoint.z);
-      var isTooClose = _this2.config.policeStations.some(station => {
-        var stationPos = new alt_client__WEBPACK_IMPORTED_MODULE_0__.Vector3(station.x, station.y, station.z);
-        var distance = unloadingPos.distanceTo(stationPos);
-        alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0420\u0430\u0441\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0434\u043E \u043F\u043E\u043B\u0438\u0446\u0435\u0439\u0441\u043A\u043E\u0433\u043E \u0443\u0447\u0430\u0441\u0442\u043A\u0430 ".concat(station.name, ": ").concat(distance));
-        return distance < minDistance; //если distance меньше чем 350 isTooClose = true 
-      });
-      if (isTooClose) {
-        // Перевыбираем точку разгрузки, не меняя точки погрузки
-        alt_client__WEBPACK_IMPORTED_MODULE_0__.log("\u0422\u043E\u0447\u043A\u0430 \u0440\u0430\u0437\u0433\u0440\u0443\u0437\u043A\u0438 \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u0431\u043B\u0438\u0437\u043A\u043E \u043A \u043F\u043E\u043B\u0438\u0446\u0438\u0438, \u0432\u044B\u0431\u0438\u0440\u0430\u0435\u043D\u0442\u0441\u044F \u043D\u043E\u0432\u0430\u044F...");
-        _this2.unloadingPoint = _this2.config.unloadingPoints[Math.floor(Math.random() * _this2.config.unloadingPoints.length)];
-        _this2.distanceFromPoliceStations(); // Рекурсивная проверка
-        //если вдруг будет в конфиге слишком много точек близко к полиции что бы были временные промежутки между проверками (+ можно доавбить ограничение на количество повторных выборов точки разгрузки)
-        yield new Promise(resolve => alt_client__WEBPACK_IMPORTED_MODULE_0__.setTimeout(resolve, 10));
-      }
-    })();
-  }
-  createLoadingPoint() {
-    // создает визуальные элементы (маркеры, блипы и колшейпы)
-    var pointVisuals = new PointVisuals(this.loadingPoint).create();
-
-    // создает PointBase с поведением (логика точки погрузки/разгрузки)
-    this.loadingPoint = new PointBase(this.pointBaseType.LOADING, this, pointVisuals);
-  }
-  createUnloadingPoint() {
-    // создает визуальные элементы (маркеры, блипы и колшейпы)
-    var pointVisuals = new PointVisuals(this.unloadingPoint).create();
-
-    // создает PointBase с поведением (логика точки погрузки/разгрузки)
-    this.unloadingPoint = new PointBase(this.pointBaseType.UNLOADING, this, pointVisuals);
-  }
-  handleColshapeEnterDeliveryOrder(colshape) {
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("alt.Player.local.vehicle.id: ".concat(alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle.id));
-
-    // если в будущем будет добавлено больше колшейпов проверка handleColshapeEnterDeliveryOrder будет return
-    if (!this.loadingPoint || !this.unloadingPoint || !this.policeColshapes) return;
-    // если 'waiting_for_loading' значит колшейп точки погрузки
-    if (this.state === DeliveryState.WAITING_FOR_LOADING) {
-      //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
-      if (colshape === this.loadingPoint.pointVisuals.colshape) {
-        this.loadingPoint.PointLoad(colshape, alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle);
-      }
-    }
-    //если 'delivering' значит колшейп точки разгрузки
-    if (this.state === DeliveryState.DELIVERING) {
-      //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
-      if (colshape === this.unloadingPoint.pointVisuals.colshape) {
-        this.unloadingPoint.PointUnload(colshape, alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle);
-      }
-    }
-    //если колшейп полицейский и груз Illegal и в колшейп вошли на загруженной машине
-    if (colshape.isPoliceZone) {
-      if (this.cargoType === 'Illegal' && alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local.vehicle.id === this.loadedVehId) {
-        alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:failDelivery'); //отправляет на сервер информацию о провале доставки
-      }
-    }
-  }
-  handleColshapeLeave(colshape) {
-    // Очищаем обработчики клавиш при выходе из колшейпа (только если открыта webview)
-    if (this.state === DeliveryState.WAITING_FOR_LOADING && this.loadingPoint) {
-      //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
-      this.loadingPoint.cleanup();
-    }
-    if (this.state === DeliveryState.DELIVERING && this.unloadingPoint) {
-      //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
-      this.unloadingPoint.cleanup();
-    }
-  }
-  //процесс погрзки (после проверки на соблюдение всех необходимых для нее требований)
-  executeLoading(vehicle) {
-    var _this3 = this;
-    return _asyncToGenerator(function* () {
-      var vehicleBlocker = new VehicleBlocker();
-      NotificationManager.getInstance().drawNotification('Начало погрузки...', true); //true значит что уведмоление пропадет через 3 чекунды
-      yield vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
-
-      _this3.loadedVehId = vehicle.id;
-      _this3.loadingPoint.pointVisuals.destroy();
-      _this3.createUnloadingPoint();
-      //this.state = DeliveryState.DELIVERING  //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
-
-      NotificationManager.getInstance().drawNotification("\u041F\u043E\u0433\u0440\u0443\u0437\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430! \u0413\u0440\u0443\u0437: ".concat(_this3.cargoType));
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:startLoading', _this3.loadedVehId); //передает на сервер что игрок погрузил груз
-    })();
-  }
-  //процесс разгрузки (после проверки на соблюдение всех необходимых для нее требований)
-  executeUnloading(vehicle) {
-    var _this4 = this;
-    return _asyncToGenerator(function* () {
-      var vehicleBlocker = new VehicleBlocker();
-      NotificationManager.getInstance().drawNotification('Начало разгрузки...', true); //true значит что уведмоление пропадет через 3 чекунды
-      yield vehicleBlocker.blockVehicleForThreeSeconds(vehicle); // даже если игрок выйдет из авто во время погрузки транспорт разблокируется и погрузка завершится
-
-      _this4.loadedVehId = null;
-      _this4.unloadingPoint.pointVisuals.destroy();
-      //this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
-
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.emitServer('client:completeDelivery');
-      NotificationManager.getInstance().drawNotification("\u0414\u043E\u0441\u0442\u0430\u0432\u043A\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430! \u0413\u0440\u0443\u0437: ".concat(_this4.cargoType));
-      _this4.deliveryJobClient.currentOrder = null;
-    })();
-  }
-  cancel() {
-    // полная очистка ресурсов
-    if (this.state === DeliveryState.WAITING_FOR_LOADING) {
-      //'waiting_for_loading'	после старта доставки (когда активна точка погрузки)
-      this.loadingPoint.cleanup();
-      this.loadingPoint.pointVisuals.destroy();
-      //this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
-    }
-    if (this.state === DeliveryState.DELIVERING) {
-      //'delivering'		с момента погрузки до момента разгрузки (активна точка разгрузки)
-      this.unloadingPoint.cleanup();
-      this.unloadingPoint.pointVisuals.destroy();
-      this.loadedVehId = null;
-      //this.state = DeliveryState.EMPTY;   //'empty'			нет активного заказа (провален или выполнен)
-    }
-
-    // обнуление в родители
-    if (this.deliveryJobClient) {
-      this.deliveryJobClient.currentOrder = null;
-    }
-  }
-}
-
-// Класс точки с логикой для точки погрузки/разгрузки
-class PointBase {
-  constructor(type, deliveryOrder, pointVisuals) {
-    this.type = type; //по идее не нужен, так как нигде не используется
-    this.deliveryOrder = deliveryOrder;
-    this.pointVisuals = pointVisuals;
-    this.keyPressHandler = null; // свойство для хранения обработчика
-  }
-
-  // метод PointLoad - инкапсулирует поведение точки погрузки
-  PointLoad(colshape, entity) {
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.log("PointLoad");
-    var player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;
-
-    // проверка на разрешенные модели авто
-    if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) {
-      NotificationManager.getInstance().drawNotification('Транспорт не подходит для перевозки');
-      return;
-    }
-    NotificationManager.getInstance().showPersistent("Погрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать погрузку");
-
-    //таких ситуаций в текущем коде быть не может, проверка есть на случай если потом будут добавлены еще обработчки при расширении функционала доставки
-    if (this.keyPressHandler) {
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.off('keydown', this.keyPressHandler);
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Удален обработчик 1');
-    }
-
-    // Создает новый обработчик для клавиши E
-    this.keyPressHandler = key => {
-      //проверка на нажатие E и соблюдение всех необходимых условий для погрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView) (можно добавить еще проверки на разрешенную модель авто если надо для защиты)
-      if (key === 69 && NotificationManager.getInstance().isWebViewOpen && this.pointVisuals.position.distanceTo(player.pos) < 10) {
-        // удаляет обработчик после нажатия
-        this.cleanup();
-        NotificationManager.getInstance().hidePersistent(); //скрыть WebView
-        if (!player.vehicle) {
-          // если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
-          NotificationManager.getInstance().drawNotification('Вы не находитесь в транспорте');
-          return;
-        }
-        if (!this.deliveryOrder.config.allowedVehicles.includes(player.vehicle.model)) {
-          // снова проверка на правильное авто (вдруг игрок заехал в колшейп на правильном авто и невыходя из колшейпа пересел в неправильное авто)
-          alt_client__WEBPACK_IMPORTED_MODULE_0__.log("Vehicle ".concat(player.vehicle.model, " is not allowed"));
-          NotificationManager.getInstance().drawNotification('Неправильное авто');
-          return;
-        }
-        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Началась погрузка');
-        this.deliveryOrder.executeLoading(player.vehicle);
-      }
-    };
-
-    // регистрирует обработчик
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('keydown', this.keyPressHandler);
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Создан обработчик погрузки');
-  }
-
-  // метод PointUnload - инкапсулирует поведение точки разгрузки
-  PointUnload(colshape, entity) {
-    var player = alt_client__WEBPACK_IMPORTED_MODULE_0__.Player.local;
-
-    // проверка что это тот же транспорт что и был загружке
-    if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {
-      NotificationManager.getInstance().drawNotification('Это не тот транспорт, в который был загружен груз');
-      return;
-    }
-    NotificationManager.getInstance().showPersistent("Разгрузка", "Нажмите <span class='notification-key'>E</span> чтобы начать разгрузку");
-    this.keyPressHandler = key => {
-      //проверка на нажатие E и соблюдение всех необходимых условий для разгрузки (если все условия соблюдены появляется WebView поэтому проверка на WebView) (можно добавить еще проверки на разрешенную модель авто если надо для защиты)
-      if (key === 69 && NotificationManager.getInstance().isWebViewOpen && this.pointVisuals.position.distanceTo(player.pos) < 15) {
-        // удаляет обработчик после нажатия
-        this.cleanup();
-        NotificationManager.getInstance().hidePersistent(); //скрыть WebView
-        //проверку ниже можно убрать, так как если игрок вышел из авто и/или пересел в другую машину ему это не даст никакого приемущества (но для логики игрового процесса стоит остаивть)
-        if (!player.vehicle) {
-          // Если игрок заехал в колшеп на транспорте но вышел и нажал E ничего не происходит (WebView закрылось ранее поэтому ему придется перезаезжать в колшейп)
-          NotificationManager.getInstance().drawNotification('Вы не находитесь в транспорте');
-          return;
-        }
-        if (this.deliveryOrder.loadedVehId !== player.vehicle.id) {
-          //если игрок заехал на загруженном транспорте, но не выходя из колшейпа пересел в другое авто (проверка для того что бы не нарушалась логика игрового процесса) 
-          NotificationManager.getInstance().drawNotification('Это не тот транспорт, в который был загружен груз');
-          return;
-        }
-        alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Началась разгрузка');
-        this.deliveryOrder.executeUnloading(player.vehicle);
-      }
-    };
-
-    // регистрирует обработчик
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.on('keydown', this.keyPressHandler);
-    alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Создан обработчик разгрузки');
-  }
-
-  // метод для очистки обработчика keyPressHandler
-  cleanup() {
-    if (this.keyPressHandler) {
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.off('keydown', this.keyPressHandler);
-      alt_client__WEBPACK_IMPORTED_MODULE_0__.log('Удален обработчик');
-      this.keyPressHandler = null;
     }
   }
 }

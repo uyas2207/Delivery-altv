@@ -1,4 +1,4 @@
-// менеджер уведомлений на сервере
+// менеджер уведомлений на сервере (используется только в CargoBase.js)
 import * as alt from 'alt-server';
 
 export class NotificationManager {
